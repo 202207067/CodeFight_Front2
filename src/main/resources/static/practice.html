@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocky PRACTICE MODE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --px-bg: #212529;
+            --px-surface: #2C3E50;
+            --px-surface-light: #34495E;
+            --px-border: #000000;
+            --px-text: #F7F7F7;
+            --px-text-muted: #B2BEC3;
+            --px-primary: #209CEE;
+            --px-success: #92CC41;
+            --px-warning: #F7D51D;
+            --px-danger: #E76E55;
+            --px-shadow-hard: 4px 4px 0px #000;
+            --px-inset-light: inset -3px -3px 0px rgba(0,0,0,0.4);
+            --px-inset-pressed: inset 3px 3px 0px rgba(0,0,0,0.4);
+            --font-pixel: 'NeoDunggeunmo', 'Galmuri9', 'Press Start 2P', monospace;
+        }
+        * { box-sizing: border-box; image-rendering: pixelated; border-radius: 0 !important; }
+        html, body { margin:0; padding:0; background: var(--px-bg); font-family: var(--font-pixel); color: var(--px-text); line-height:1.4; height:100vh; overflow:hidden; font-size: 20px; }
+        body { background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 16px 16px; }
+        body::after { content:""; position:fixed; inset:0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 2px); pointer-events:none; z-index:9999; }
+        .page-container { display:flex; flex-direction:column; height:100vh; padding:20px 24px 24px; gap:12px; position:relative; z-index:10; }
+        .pixel-card { background: var(--px-surface); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); display:flex; flex-direction:column; }
+        .pixel-card-header { background: var(--px-surface-light); border:4px solid var(--px-border); border-bottom:none; padding:6px 12px; font-size:20px; display:flex; align-items:center; justify-content:space-between; }
+        .pixel-btn { display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-pixel); font-size:18px; color:#fff; border:4px solid var(--px-border); outline:none; cursor:pointer; padding:8px 16px; position:relative; user-select:none; box-shadow: var(--px-shadow-hard); transition: transform 0.06s, box-shadow 0.06s; text-decoration:none; }
+        .pixel-btn:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
+        .pixel-btn:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+        .pixel-btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; box-shadow: var(--px-shadow-hard); }
+        .pixel-btn-primary { background: var(--px-primary); text-shadow: 2px 2px 0 rgba(0,0,0,0.4); }
+        .pixel-btn-success { background: var(--px-success); color: #000; text-shadow: none; }
+        .pixel-btn-secondary { background: #636e72; text-shadow: 2px 2px 0 rgba(0,0,0,0.3); }
+        .pixel-btn-danger { background: var(--px-danger); }
+        .problem-title { color: var(--px-warning); font-size:22px; text-shadow:2px 2px 0 #000; margin-bottom:10px; }
+        .problem-question { font-size:18px; line-height:1.7; color:#ddd; }
+        .options-grid { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+        .option-btn { background: #1a1e21; border:3px solid var(--px-border); color: var(--px-text); font-family: var(--font-pixel); font-size:16px; padding:10px 14px; cursor:pointer; text-align:left; box-shadow: var(--px-inset-light); transition: background 0.1s, border-color 0.1s; }
+        .option-btn:hover { background: #252f3f; }
+        .option-btn.selected { border-color: var(--px-primary); background: rgba(32,156,238,0.15); }
+        .option-btn.correct { border-color: var(--px-success); background: rgba(146,204,65,0.15); }
+        .option-btn.wrong { border-color: var(--px-danger); background: rgba(231,110,85,0.15); }
+        .result-correct { color: var(--px-success); text-shadow: 2px 2px 0 #000; }
+        .result-wrong { color: var(--px-danger); text-shadow: 2px 2px 0 #000; }
+        .explain-box { background: rgba(146, 204, 65, 0.1); border: 3px solid var(--px-success); padding: 10px; margin-top: 10px; }
+        .answer-box { background: #1a1e21; border: 3px solid var(--px-border); padding: 10px; margin-top: 10px; box-shadow: var(--px-inset-light); }
+        .user-list { padding:8px; display:flex; flex-direction:column; gap:6px; overflow-y:auto; flex-grow:1; }
+        .user-item { background: #252f3f; border:3px solid var(--px-border); padding:6px; display:flex; align-items:center; gap:6px; box-shadow: var(--px-shadow-hard); cursor:pointer; }
+        .user-item.me { border-color: var(--px-primary); }
+        .user-item.solved { border-color: var(--px-success); }
+        .user-item.wrong { border-color: var(--px-danger); }
+        .user-avatar { font-size:1.6rem; }
+        .user-info { flex-grow:1; display:flex; flex-direction:column; gap:2px; font-size:16px; }
+        .user-score { text-align:right; font-size:14px; }
+        .progress-track { background: #1a1e21; border:3px solid var(--px-border); height:16px; width:100%; position:relative; box-shadow: var(--px-inset-light); }
+        .progress-fill { background: var(--px-success); height:100%; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.2); transition: width 0.3s; }
+        ::-webkit-scrollbar { width: 14px; }
+        ::-webkit-scrollbar-track { background: var(--px-surface); border-left: 2px solid #000; }
+        ::-webkit-scrollbar-thumb { background: var(--px-primary); border: 2px solid #000; }
+        @media (max-width: 768px) {
+            .page-container { padding:16px; }
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="js/practice-exercises.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+    const PRACTICE_STATE_KEY = 'practiceState_rocky_user';
+
+    function shuffleArray(items) {
+        return [...items].sort(() => Math.random() - 0.5);
+    }
+
+    function createExercisePool(count) {
+        const bank = (typeof practiceExercises !== 'undefined' ? practiceExercises : []);
+        const shuffled = shuffleArray(bank);
+        return shuffled.slice(0, Math.max(3, Math.min(30, count)));
+    }
+
+    function PracticeApp() {
+        const params = new URLSearchParams(window.location.search);
+        const lang = (params.get('lang') || 'JAVA').toUpperCase();
+        const requestedCount = Math.max(3, Math.min(30, parseInt(params.get('count')) || 10));
+
+        const [exercises, setExercises] = useState([]);
+        const [currentIndex, setCurrentIndex] = useState(0);
+        const [userAnswers, setUserAnswers] = useState([]);
+        const [checked, setChecked] = useState(new Set());
+
+        useEffect(() => {
+            const pool = createExercisePool(requestedCount);
+            setExercises(pool);
+
+            // restore state
+            try {
+                const saved = localStorage.getItem(PRACTICE_STATE_KEY);
+                if (saved) {
+                    const st = JSON.parse(saved);
+                    if (st.lang === lang && String(st.count) === String(requestedCount) && Array.isArray(st.answers)) {
+                        setUserAnswers(st.answers);
+                        setChecked(new Set(st.checked || []));
+                        setCurrentIndex(Math.min(Math.max(st.currentIndex || 0, 0), pool.length - 1));
+                        return;
+                    }
+                }
+            } catch (e) {}
+            setUserAnswers(Array(pool.length).fill(-1));
+        }, [lang, requestedCount]);
+
+        useEffect(() => {
+            if (exercises.length === 0) return;
+            localStorage.setItem(PRACTICE_STATE_KEY, JSON.stringify({
+                lang, count: requestedCount,
+                currentIndex, answers: userAnswers,
+                checked: Array.from(checked)
+            }));
+        }, [exercises, currentIndex, userAnswers, checked, lang, requestedCount]);
+
+        const currentEx = exercises[currentIndex] || {};
+        const isChecked = checked.has(currentIndex);
+        const selectedOption = userAnswers[currentIndex];
+        const isCorrect = isChecked && selectedOption === currentEx.correctIndex;
+
+        const handleSelect = (idx) => {
+            if (isChecked) return;
+            setUserAnswers(prev => {
+                const next = [...prev];
+                next[currentIndex] = idx;
+                return next;
+            });
+        };
+
+        const handleCheck = () => {
+            if (selectedOption === -1 || selectedOption === undefined) return;
+            setChecked(prev => new Set(prev).add(currentIndex));
+        };
+
+        const handlePrev = () => setCurrentIndex(i => Math.max(0, i - 1));
+        const handleNext = () => setCurrentIndex(i => Math.min(exercises.length - 1, i + 1));
+        const handleExit = () => {
+            if (window.confirm('연습을 종료하고 로비로 돌아가시겠습니까?')) {
+                localStorage.removeItem(PRACTICE_STATE_KEY);
+                window.location.href = 'lobby.html';
+            }
+        };
+
+        const solvedCount = useMemo(() => {
+            let count = 0;
+            for (let i = 0; i < exercises.length; i++) {
+                if (checked.has(i) && userAnswers[i] === exercises[i].correctIndex) count++;
+            }
+            return count;
+        }, [checked, userAnswers, exercises]);
+
+        const progressPct = exercises.length > 0 ? (solvedCount / exercises.length) * 100 : 0;
+
+        return (
+            <div className="page-container">
+                <div className="pixel-card" style={{ flexShrink: 0, padding: '8px 12px', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'none', borderWidth: '3px' }}>
+                    <span style={{ color: 'var(--px-warning)', fontSize: '18px' }}>PRACTICE MODE</span>
+                    <div style={{ display: 'flex', gap: '8px', fontSize: '14px' }}>
+                        <span style={{ background: '#1a1e21', border: '2px solid #000', padding: '2px 8px' }}>LANG {lang}</span>
+                        <span style={{ background: '#1a1e21', border: '2px solid #000', padding: '2px 8px', color: 'var(--px-success)' }}>{solvedCount}/{exercises.length} SOLVED</span>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', flexGrow: 1, minHeight: 0 }}>
+                    {/* Problem panel */}
+                    <div className="pixel-card" style={{ flex: '2', minHeight: 0, overflow: 'auto' }}>
+                        <div className="pixel-card-header">
+                            <span style={{ color: 'var(--px-warning)' }}>QUESTION {currentIndex + 1}/{exercises.length}</span>
+                            <span style={{ fontSize: '16px', color: '#aaa' }}>{currentEx.title || 'Loading...'}</span>
+                        </div>
+                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            <div className="problem-question">{currentEx.question}</div>
+
+                            <div className="options-grid">
+                                {(currentEx.options || []).map((opt, idx) => {
+                                    const optLabel = String.fromCharCode(65 + idx);
+                                    let btnClass = 'option-btn';
+                                    if (isChecked) {
+                                        if (idx === currentEx.correctIndex) btnClass += ' correct';
+                                        else if (idx === selectedOption) btnClass += ' wrong';
+                                    } else if (idx === selectedOption) {
+                                        btnClass += ' selected';
+                                    }
+                                    return (
+                                        <button
+                                            key={idx}
+                                            className={btnClass}
+                                            onClick={() => handleSelect(idx)}
+                                            disabled={isChecked}
+                                        >
+                                            <span style={{ color: 'var(--px-warning)', marginRight: '8px' }}>{optLabel}.</span>
+                                            {opt}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                <button className="pixel-btn pixel-btn-primary" onClick={handleCheck} disabled={selectedOption === -1 || selectedOption === undefined}>
+                                    정답 확인
+                                </button>
+                            </div>
+
+                            {isChecked && (
+                                <div>
+                                    <div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }} className={isCorrect ? 'result-correct' : 'result-wrong'}>
+                                        {isCorrect ? '정답입니다!' : '틀렸습니다!'}
+                                    </div>
+                                    {!isCorrect && (
+                                        <div className="answer-box">
+                                            <div style={{ fontSize: '14px', color: '#aaa', marginBottom: '4px' }}>정답:</div>
+                                            <div style={{ color: 'var(--px-success)', fontSize: '18px' }}>{String.fromCharCode(65 + currentEx.correctIndex)}. {currentEx.options[currentEx.correctIndex]}</div>
+                                        </div>
+                                    )}
+                                    <div className="explain-box">
+                                        <div style={{ fontSize: '14px', color: '#aaa', marginBottom: '4px' }}>해설:</div>
+                                        <div style={{ fontSize: '16px', lineHeight: '1.5' }}>{currentEx.explanation}</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Sidebar */}
+                    <div className="pixel-card" style={{ width: '300px', minHeight: 0, flexShrink: 0 }}>
+                        <div className="pixel-card-header" style={{ justifyContent: 'center' }}>
+                            <span>PROBLEM SET</span>
+                        </div>
+                        <div style={{ padding: '8px 10px' }}>
+                            <div style={{ fontSize: '12px', color: '#aaa', marginBottom: '6px' }}>진행도</div>
+                            <div className="progress-track">
+                                <div className="progress-fill" style={{ width: `${progressPct}%` }}></div>
+                            </div>
+                        </div>
+                        <div className="user-list">
+                            {exercises.map((ex, idx) => {
+                                const cls = checked.has(idx)
+                                    ? (userAnswers[idx] === ex.correctIndex ? 'solved' : 'wrong')
+                                    : idx === currentIndex ? 'me' : '';
+                                return (
+                                    <div className={`user-item ${cls}`} key={ex.id || idx} onClick={() => setCurrentIndex(idx)}>
+                                        <div className="user-avatar" style={{ fontSize: '1.2rem' }}>
+                                            {checked.has(idx)
+                                                ? (userAnswers[idx] === ex.correctIndex ? 'O' : 'X')
+                                                : idx === currentIndex ? '▶' : '□'}
+                                        </div>
+                                        <div className="user-info">
+                                            <div>문제 {idx + 1}</div>
+                                            <div style={{ fontSize: '13px', color: '#aaa' }}>{ex.title || ''}</div>
+                                        </div>
+                                        <div className="user-score" style={{
+                                            color: checked.has(idx)
+                                                ? (userAnswers[idx] === ex.correctIndex ? 'var(--px-success)' : 'var(--px-danger)')
+                                                : '#777'
+                                        }}>
+                                            {checked.has(idx)
+                                                ? (userAnswers[idx] === ex.correctIndex ? '정답' : '오답')
+                                                : '미풀이'}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="pixel-card" style={{ flexShrink: 0, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', boxShadow: 'none', borderWidth: '3px' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button className="pixel-btn pixel-btn-secondary" onClick={handlePrev} disabled={currentIndex <= 0} style={{ padding: '4px 14px', fontSize: '16px' }}>&lt;</button>
+                        <span style={{ fontSize: '18px', minWidth: '80px', textAlign: 'center' }}>{currentIndex + 1}/{exercises.length}</span>
+                        <button className="pixel-btn pixel-btn-secondary" onClick={handleNext} disabled={currentIndex >= exercises.length - 1} style={{ padding: '4px 14px', fontSize: '16px' }}>&gt;</button>
+                    </div>
+                    <button className="pixel-btn pixel-btn-danger" onClick={handleExit} style={{ padding: '6px 18px' }}>EXIT</button>
+                </div>
+            </div>
+        );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<PracticeApp />);
+</script>
+</body>
+</html>

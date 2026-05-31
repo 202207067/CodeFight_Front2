@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocky BATTLE RESULT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --px-bg: #212529;
+            --px-surface: #2C3E50;
+            --px-surface-light: #34495E;
+            --px-border: #000000;
+            --px-text: #F7F7F7;
+            --px-text-muted: #B2BEC3;
+            --px-primary: #209CEE;
+            --px-success: #92CC41;
+            --px-warning: #F7D51D;
+            --px-danger: #E76E55;
+            --px-shadow-hard: 4px 4px 0px #000;
+            --px-inset-light: inset -3px -3px 0px rgba(0,0,0,0.4);
+            --font-pixel: 'NeoDunggeunmo', 'Galmuri9', 'Press Start 2P', monospace;
+        }
+
+        * { box-sizing: border-box; image-rendering: pixelated; border-radius: 0 !important; }
+        ::selection { background: var(--px-primary); color: var(--px-text); }
+        html, body { margin:0; padding:0; background: var(--px-bg); font-family: var(--font-pixel); color: var(--px-text); line-height:1.4; height:100vh; overflow:hidden; font-size: 20px; }
+        body { background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 16px 16px; }
+        body::after { content:""; position:fixed; inset:0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 2px); pointer-events:none; z-index:9999; }
+
+        .page-container { display:flex; flex-direction:column; height:100vh; padding:20px 24px 24px; gap:12px; position:relative; z-index:10; }
+
+        @media (max-width: 768px) {
+            .page-container { padding:16px 18px 18px; gap:10px; }
+        }
+
+        .pixel-card { background: var(--px-surface); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); display:flex; flex-direction:column; }
+        .pixel-card-flat { background: var(--px-surface); border:4px solid var(--px-border); padding:8px; }
+        .pixel-card-header { background: var(--px-surface-light); border:4px solid var(--px-border); border-bottom:none; padding:6px 12px; font-size:20px; display:flex; align-items:center; justify-content:space-between; }
+
+        .pixel-btn { display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-pixel); font-size:18px; color:#fff; border:4px solid var(--px-border); outline:none; cursor:pointer; padding:8px 16px; position:relative; user-select:none; box-shadow: var(--px-shadow-hard); transition: transform 0.06s, box-shadow 0.06s; text-decoration:none; }
+        .pixel-btn:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
+        .pixel-btn-primary { background: var(--px-primary); text-shadow: 2px 2px 0 rgba(0,0,0,0.4); }
+        .pixel-btn-primary:hover { background: #4DAEF4; }
+        .pixel-btn-success { background: var(--px-success); color: #000; text-shadow: none; }
+        .pixel-btn-success:hover { background: #B0E05D; }
+        .pixel-btn-secondary { background: #636e72; text-shadow: 2px 2px 0 rgba(0,0,0,0.3); }
+        .pixel-btn-secondary:hover { background: #7f8c8d; }
+
+        .pixel-text-primary { color: var(--px-primary); text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+        .pixel-text-success { color: var(--px-success); text-shadow: 2px 2px 0 #000; }
+        .pixel-text-danger { color: var(--px-danger); text-shadow: 2px 2px 0 #000; }
+        .pixel-text-muted { color: var(--px-text-muted); }
+
+        .result-grid { display:grid; grid-template-columns: 1.2fr 1.2fr 0.8fr; gap:8px; flex:1; min-height:0; }
+        .result-grid.versus-many { grid-template-columns: 2fr 0.8fr; }
+
+        .ranking-panel { background: var(--px-surface); border:4px solid var(--px-primary); padding:8px; display:flex; flex-direction:column; min-height:0; box-shadow: 0 0 0 4px #000, 0 0 30px rgba(32,156,238,0.3); }
+        .rank-title { font-size:26px; text-align:center; margin-bottom:8px; padding-bottom:4px; border-bottom:2px dashed #555; color: var(--px-warning); text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+        .rank-number { font-size:22px; width:44px; text-align:center; color: var(--px-warning); text-shadow:2px 2px 0 #000; flex-shrink:0; }
+        .rank-1 .rank-number { color: #FFD700; }
+        .rank-2 .rank-number { color: #C0C0C0; }
+        .rank-3 .rank-number { color: #CD7F32; }
+        .ranking-panel .player-row { border-color: var(--px-border); }
+        .ranking-panel .player-row.rank-1 { border-color: #FFD700; box-shadow: 0 0 0 2px rgba(255,215,0,0.3), var(--px-shadow-hard); }
+        .ranking-panel .player-row.rank-2 { border-color: #C0C0C0; box-shadow: 0 0 0 2px rgba(192,192,192,0.3), var(--px-shadow-hard); }
+        .ranking-panel .player-row.rank-3 { border-color: #CD7F32; box-shadow: 0 0 0 2px rgba(205,127,50,0.3), var(--px-shadow-hard); }
+        .ranking-panel .score-val { color: var(--px-success); text-shadow:1px 1px 0 #000; }
+        .ranking-footer { margin-top:auto; padding-top:6px; border-top:2px dashed #555; text-align:center; font-size:20px; color: var(--px-text-muted); }
+
+        .team-panel { background: var(--px-surface); border:4px solid; padding:8px; display:flex; flex-direction:column; min-height:0; }
+        .team-panel.win { border-color: var(--px-success); box-shadow: 0 0 0 4px #000, 0 0 30px rgba(146,204,65,0.3); }
+        .team-panel.lose { border-color: var(--px-danger); box-shadow: 0 0 0 4px #000, 0 0 30px rgba(231,110,85,0.3); }
+        .team-title { font-size:26px; text-align:center; margin-bottom:8px; padding-bottom:4px; border-bottom:2px dashed #555; }
+        .win .team-title { color: var(--px-success); text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+        .lose .team-title { color: var(--px-danger); text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+
+        .player-list { display:flex; flex-direction:column; gap:8px; flex:1; overflow-y:auto; min-height:0; }
+        .player-row { background: #252f3f; border:4px solid var(--px-border); display:flex; align-items:center; padding:6px 10px; gap:8px; box-shadow: var(--px-shadow-hard); }
+        .win .player-row { border-color: var(--px-success); }
+        .lose .player-row { border-color: var(--px-danger); }
+        .player-avatar { font-size:2.2rem; width:48px; text-align:center; }
+        .player-nickname { flex-grow:1; font-size:20px; color:#fff; }
+        .player-score-info { font-size:16px; color:#aaa; text-align:right; }
+        .score-val { font-size:20px; display:block; margin-top:2px; }
+        .win .score-val { color: var(--px-success); text-shadow:1px 1px 0 #000; }
+        .lose .score-val { color: var(--px-danger); text-shadow:1px 1px 0 #000; }
+
+        .team-footer { margin-top:auto; padding-top:6px; border-top:2px dashed #555; text-align:center; }
+        .team-footer-inner { font-size:28px; font-family:var(--font-pixel); letter-spacing:2px; line-height:1.2; }
+        .win .team-footer-inner { color: var(--px-success); text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+        .lose .team-footer-inner { color: var(--px-danger); text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+        .team-footer-delta { font-size:20px; display:block; margin-top:4px; }
+        .win .team-footer-delta { color: var(--px-success); }
+        .lose .team-footer-delta { color: var(--px-danger); }
+
+        .side-panel { display:flex; flex-direction:column; gap:6px; min-height:0; }
+        .code-view-list { background: var(--px-surface); border:4px solid var(--px-primary); box-shadow: var(--px-shadow-hard); padding:8px; display:flex; flex-direction:column; gap:4px; flex:1; min-height:0; max-height:40vh; overflow-y:auto; }
+        .btn-code-view { background: #1a1e21; border:3px solid var(--px-primary); color: var(--px-primary); font-family:var(--font-pixel); font-size:18px; padding:6px; cursor:pointer; text-align:center; transition:0.1s; }
+        .btn-code-view:hover { background: var(--px-primary); color:#000; }
+
+        .online-user-card { background: var(--px-surface); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); padding:8px; display:flex; flex-direction:column; gap:4px; flex:1; min-height:0; max-height:40vh; overflow-y:auto; }
+        .online-user-header { font-size:20px; color:var(--px-primary); text-shadow:2px 2px 0 #000; margin-bottom:2px; text-align:center; }
+        .online-user-row { display:flex; align-items:center; gap:8px; padding:4px 6px; border-bottom:2px dashed #475569; }
+        .online-user-row:last-child { border-bottom:none; }
+        .online-user-avatar { font-size:2.2rem; width:48px; text-align:center; }
+        .online-user-name { font-size:20px; color:#fff; }
+        .online-indicator { font-size:20px; color:var(--px-success); margin-left:auto; }
+
+        .bottom-grid { display:grid; grid-template-columns: 1fr 180px; gap:8px; flex-shrink:0; height: auto; }
+
+        .chat-wrapper { display:flex; flex-direction:column; height: 300px; flex-shrink:0; border:4px solid var(--px-border); background: var(--px-surface); box-shadow: var(--px-shadow-hard); overflow:hidden; min-height:0; }
+        .chat-messages { flex:1; background: #1a1e21; overflow-y:scroll; overflow-x:hidden; scrollbar-gutter: stable; overscroll-behavior: contain; font-size:18px; padding:6px 8px; min-height:0; line-height:1.4; }
+        .chat-input-row { display:flex; flex-shrink:0; height:44px; border-top:4px solid var(--px-border); background:#1a1e21; }
+        .chat-mode-select { background: var(--px-surface-light); border:none; border-right:4px solid var(--px-border); color:#fff; padding:0 10px; font-family:var(--font-pixel); font-size:16px; cursor:pointer; appearance:none; text-align:center; }
+        .chat-mode-select option { background: var(--px-surface); color:#fff; font-family:var(--font-pixel); }
+        .chat-input { flex:1; background:transparent; border:none; color:var(--px-text); padding:6px 10px; font-family:var(--font-pixel); font-size:18px; outline:none; }
+        .chat-send-btn { background: var(--px-surface-light); color:#fff; border:none; border-left:4px solid var(--px-border); padding:0 16px; font-family:var(--font-pixel); font-size:18px; cursor:pointer; transition:0.2s; white-space:nowrap; }
+        .chat-send-btn:hover { background: var(--px-primary); color:#000; }
+
+        .action-panel { display:flex; flex-direction:column; gap:6px; }
+        .btn-action { flex:1; }
+
+        .ai-floating-btn { position:fixed; bottom:24px; right:24px; width:60px; height:60px; background: var(--px-bg); border:4px solid var(--px-primary); display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow: var(--px-shadow-hard); z-index:1000; transition: transform 0.2s; font-size:1.8rem; }
+        .ai-floating-btn:hover { transform: scale(1.1); }
+        .ai-floating-panel { position:fixed; bottom:94px; right:24px; width:320px; height:380px; background: var(--px-surface); border:4px solid var(--px-primary); box-shadow: var(--px-shadow-hard); z-index:1000; display:flex; flex-direction:column; overflow:hidden; transform-origin:bottom right; transition: all 0.3s ease; }
+        .ai-floating-panel.hidden { transform: scale(0); opacity:0; pointer-events:none; }
+        .ai-panel-header { background: var(--px-surface-light); border-bottom:3px solid var(--px-primary); padding:10px; display:flex; justify-content:space-between; align-items:center; }
+        .ai-panel-title { color: var(--px-primary); font-size:18px; text-shadow:2px 2px 0 #000; margin:0; }
+        .ai-close-btn { background:transparent; border:none; color:#fff; font-size:18px; cursor:pointer; opacity:0.8; }
+        .ai-close-btn:hover { opacity:1; color: var(--px-danger); }
+        .ai-messages { flex:1; padding:10px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+        .ai-msg { max-width:85%; padding:8px; border:3px solid; font-size:16px; line-height:1.4; }
+        .ai-msg.system { background: rgba(32,156,238,0.12); border-color: var(--px-primary); color:#fff; align-self:flex-start; }
+        .ai-msg.user { background: rgba(146,204,65,0.12); border-color: var(--px-success); color:#fff; align-self:flex-end; }
+        .ai-input-area { display:flex; border-top:3px solid var(--px-border); flex-shrink:0; height:44px; }
+        .ai-input { flex:1; background:#1a1e21; border:none; color:#fff; padding:8px; font-size:16px; outline:none; font-family:var(--font-pixel); }
+        .ai-submit-btn { background: var(--px-surface-light); color: var(--px-primary); border:none; border-left:3px solid var(--px-border); padding:0 14px; cursor:pointer; transition:0.2s; font-family:var(--font-pixel); font-size:16px; }
+        .ai-submit-btn:hover { background: var(--px-primary); color:#000; }
+
+        .code-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:3000; display:flex; align-items:center; justify-content:center; padding:10px; }
+        .code-modal-content { background: var(--px-surface); border:4px solid var(--px-primary); box-shadow: var(--px-shadow-hard); width:100%; max-width:1200px; height:85vh; display:flex; flex-direction:column; position:relative; }
+        .code-modal-header { background: var(--px-surface-light); border-bottom:4px solid var(--px-border); padding:10px 14px; display:flex; justify-content:space-between; align-items:center; }
+        .code-modal-title { color: var(--px-primary); font-size:20px; text-shadow:2px 2px 0 #000; margin:0; }
+        .code-modal-close { background:transparent; border:none; color:#fff; font-size:20px; cursor:pointer; font-family:var(--font-pixel); padding:4px 10px; }
+        .code-modal-close:hover { color: var(--px-danger); }
+        .code-modal-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; flex:1; padding:10px; min-height:0; }
+        .code-modal-panel { display:flex; flex-direction:column; min-height:0; }
+        .code-modal-problem { padding:8px; font-size:18px; color:#ddd; line-height:1.6; overflow-y:auto; flex-grow:1; white-space:pre-wrap; }
+        .code-modal-code { flex:1; background: #1a1e21; box-shadow: var(--px-inset-light); padding:10px; overflow-y:auto; position:relative; }
+        .code-modal-code pre { margin:0; font-family:var(--font-pixel); font-size:18px; line-height:1.5; color:var(--px-text); white-space:pre-wrap; word-break:break-all; }
+        .example-box { background:#1a1e21; border:3px solid var(--px-border); padding:8px; margin-top:8px; box-shadow: var(--px-inset-light); }
+        .example-box .label { color: var(--px-primary); font-size:16px; margin-bottom:4px; }
+        .problem-title { color: var(--px-warning); font-size:18px; margin-bottom:6px; text-shadow:2px 2px 0 #000; }
+
+        ::-webkit-scrollbar { width: 14px; }
+        ::-webkit-scrollbar-track { background: var(--px-surface); border-left: 2px solid #000; }
+        ::-webkit-scrollbar-thumb { background: var(--px-primary); border: 2px solid #000; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--px-warning); }
+    </style>
+</head>
+<body>
+<div id="root" style="width:100%;height:100vh;"></div>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="js/problems.js"></script>
+<script type="text/babel">
+    function ResultApp() {
+        const { useState, useEffect, useRef } = React;
+        const params = new URLSearchParams(window.location.search);
+        const roomId = params.get('roomId') || '';
+        const CODE_HISTORY_KEY = 'codeHistory_rocky_user';
+        const getSolution = (problem) => {
+            if (problem?.solutionJAVA) return problem.solutionJAVA;
+            if (!problem?.title) return '// 정답이 준비되지 않았습니다.';
+            const all = [].concat(problems['쉬움'] || [], problems['보통'] || [], problems['어려움'] || []);
+            const match = all.find(p => p.title === problem.title);
+            return match?.solutionJAVA || '// 정답이 준비되지 않았습니다.';
+        };
+        const [isAiOpen, setIsAiOpen] = useState(false);
+        const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+        const [modalPlayer, setModalPlayer] = useState(null);
+        const [modalCode, setModalCode] = useState('');
+        const [modalProblems, setModalProblems] = useState([]);
+        const [modalProblemIndex, setModalProblemIndex] = useState(0);
+
+        const sessionId = roomId ? `battle-${roomId}` : 'battle-solo';
+        const submission = JSON.parse(localStorage.getItem('battleSubmission') || '{}');
+        const demoState = (() => {
+            try { return JSON.parse(localStorage.getItem(`battleDemoState_${sessionId}`) || 'null'); }
+            catch { return null; }
+        })();
+        const roomUsersRaw = (() => {
+            try { return JSON.parse(localStorage.getItem('roomUsers') || 'null'); }
+            catch { return null; }
+        })();
+        const roomUsers = Array.isArray(roomUsersRaw) ? roomUsersRaw : [];
+        const demoBots = Array.isArray(demoState?.battleBots) ? demoState.battleBots : [];
+
+        const roomMode = submission?.mode || demoState?.mode || '1/1';
+        const isVersusMany = roomMode !== '1/1';
+
+        const parseScore = (scoreStr) => {
+            const num = parseInt(String(scoreStr).replace(/[^0-9]/g, ''), 10);
+            return Number.isFinite(num) ? num : 0;
+        };
+
+        const computeDemoScore = (baseScore, solvedCount, remaining, roundTime, solvedThisRound) => {
+            const timeBonus = Math.max(0, Math.floor((remaining / Math.max(1, roundTime)) * 75));
+            const clearBonus = solvedThisRound ? 50 : 0;
+            return baseScore + solvedCount * 125 + timeBonus + clearBonus;
+        };
+
+        const allPlayers = (() => {
+            const list = [];
+            const seen = new Set();
+            const roundTime = demoState?.roundSeconds || 600;
+            const finalRemaining = demoState?.remaining ?? 0;
+            roomUsers.forEach((u) => {
+                const id = u.id || '';
+                if (seen.has(id)) return;
+                seen.add(id);
+                const isMe = id === 'me' || (u.name && u.name.includes('rocky_user'));
+                const solvedProblems = Array.isArray(u.solvedProblems) ? u.solvedProblems : [];
+                const solvedThisRound = isMe
+                    ? (demoState?.currentProblemLocked || solvedProblems.includes(submission?.currentIndex ?? solvedProblems[solvedProblems.length - 1] ?? -1))
+                    : false;
+                const score = isMe
+                    ? computeDemoScore(1000, solvedProblems.length, finalRemaining, roundTime, solvedThisRound)
+                    : parseScore(u.score);
+                list.push({
+                    id: isMe ? 'rocky_user' : id,
+                    name: u.name || (isMe ? 'rocky_user (나)' : id),
+                    avatar: u.avatar || '👤',
+                    score,
+                    delta: 0
+                });
+            });
+            demoBots.forEach((bot) => {
+                if (seen.has(bot.id)) return;
+                seen.add(bot.id);
+                const botSolved = Array.isArray(bot.solvedProblems) ? bot.solvedProblems : [];
+                const botRemaining = Array.isArray(bot.solveScheduleByProblem) && botSolved.length > 0
+                    ? bot.solveScheduleByProblem[botSolved[botSolved.length - 1]] || 0
+                    : 0;
+                const score = computeDemoScore(bot.score || 1000, botSolved.length, botRemaining, roundTime, true);
+                list.push({
+                    id: bot.id,
+                    name: bot.name,
+                    avatar: bot.avatar || '🤖',
+                    score,
+                    delta: 0
+                });
+            });
+            if (list.length === 0) {
+                list.push({ id: 'rocky_user', name: 'rocky_user (나)', score: 1000, delta: 0, avatar: '😎' });
+                list.push({ id: 'elder', name: '알고리즘깎는노인', score: 1420, delta: 0, avatar: '👴' });
+            }
+            list.sort((a, b) => b.score - a.score);
+            const topScore = list[0]?.score || 1000;
+            list.forEach((p, i) => { p.rank = i + 1; p.delta = p.score - topScore; });
+            return list;
+        })();
+
+        const myScore = allPlayers.find(p => p.id === 'rocky_user')?.score || 1000;
+        const earnedGold = Math.floor(myScore / 10);
+        useEffect(() => {
+            try {
+                const storedGold = parseInt(localStorage.getItem('rocky_gold') || '0', 10);
+                const newGold = storedGold + earnedGold;
+                localStorage.setItem('rocky_gold', String(newGold));
+            } catch (e) {
+                console.error('골드 저장 실패:', e);
+            }
+        }, []);
+
+        const winners = allPlayers.slice(0, Math.max(1, Math.ceil(allPlayers.length / 2)));
+        const losers = allPlayers.slice(Math.ceil(allPlayers.length / 2));
+
+        const mySubmissionCodes = Array.isArray(submission.codes) ? submission.codes : Array.isArray(submission.answers) ? submission.answers : [];
+        const myProblems = Array.isArray(submission.problems) ? submission.problems : [];
+
+        const getPlayerCodeByProblem = (playerId, problemIndex) => {
+            if (playerId === 'rocky_user' || playerId === 'me') {
+                return mySubmissionCodes[problemIndex] || '// 코드를 찾을 수 없습니다.';
+            }
+            const bot = demoBots.find((b) => b.id === playerId);
+            if (bot && Array.isArray(bot.codeByProblem)) {
+                return bot.codeByProblem[problemIndex] || '// 코드를 찾을 수 없습니다.';
+            }
+            return localStorage.getItem('opponentBattleCode') || '// 코드를 찾을 수 없습니다.';
+        };
+
+        const handleCodeView = (playerId) => {
+            const probData = JSON.parse(localStorage.getItem('battleProblemData') || 'null') || { title: '', description: '', input: '', output: '' };
+            setModalPlayer(allPlayers.find(p => p.id === playerId));
+            setModalProblems(myProblems.length > 0 ? myProblems : [probData]);
+            setModalProblemIndex(0);
+            setModalCode(getPlayerCodeByProblem(playerId, 0));
+            setIsCodeModalOpen(true);
+        };
+
+        useEffect(() => {
+            try {
+                if (!submission || !submission.submittedAt) return;
+
+                const historyId = submission.historyId || `${submission.roomId || roomId || 'solo'}::${submission.submittedAt}`;
+                const answers = Array.isArray(submission.codes) ? submission.codes : Array.isArray(submission.answers) ? submission.answers : [];
+                const problems = Array.isArray(submission.problems) ? submission.problems : [];
+
+                const entry = {
+                    historyId,
+                    roomId: submission.roomId || roomId || '',
+                    submittedAt: submission.submittedAt,
+                    lang: submission.lang || 'JAVA',
+                    problems,
+                    codes: answers,
+                    code: submission.code || answers[0] || ''
+                };
+
+                const storedHistory = localStorage.getItem(CODE_HISTORY_KEY);
+                const parsedHistory = storedHistory ? JSON.parse(storedHistory) : [];
+                const safeHistory = Array.isArray(parsedHistory) ? parsedHistory.filter(item => item?.historyId !== historyId) : [];
+                localStorage.setItem(CODE_HISTORY_KEY, JSON.stringify([entry, ...safeHistory].slice(0, 50)));
+            } catch (e) {
+                console.error('코드 히스토리 저장 실패:', e);
+            }
+        }, [roomId]);
+
+        useEffect(() => {
+            if (!isCodeModalOpen || !modalPlayer) return;
+            setModalCode(getPlayerCodeByProblem(modalPlayer.id, modalProblemIndex));
+        }, [modalProblemIndex, isCodeModalOpen, modalPlayer]);
+
+        const [chatMessages, setChatMessages] = useState([
+            { sender: 'SYSTEM', text: '매치가 종료되었습니다.', type: 'sys' },
+            { sender: '알고리즘깎는노인', text: '수고하셨습니다.', type: 'user' },
+            { sender: 'rocky_user', text: '고생하셨습니다!', type: 'user' }
+        ]);
+        const [chatInput, setChatInput] = useState('');
+        const [chatMode, setChatMode] = useState('ALL');
+
+        const handleSendChat = () => {
+            if (!chatInput.trim()) return;
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const modeLabel = chatMode === 'ALL' ? '[전체]' : '[친구]';
+            setChatMessages(prev => [...prev, { sender: 'rocky_user', text: chatInput, type: 'user', mode: modeLabel, time: timeStr }]);
+            setChatInput('');
+        };
+
+        const [aiMessages, setAiMessages] = useState([
+            { type: 'system', text: '안녕하세요! 이번 대결에 대한 피드백이 필요하신가요? 작성하신 코드의 시간 복잡도나 개선점을 분석해 드릴 수 있습니다.' }
+        ]);
+        const [aiInput, setAiInput] = useState('');
+        const handleSendAiChat = () => {
+            if (!aiInput.trim()) return;
+            setAiMessages(prev => [...prev, { type: 'user', text: aiInput }]);
+            setAiInput('');
+        };
+
+        const chatDisplayRef = useRef(null);
+        useEffect(() => {
+            if (chatDisplayRef.current) { chatDisplayRef.current.scrollTop = chatDisplayRef.current.scrollHeight; }
+        }, [chatMessages]);
+
+        const MY_USER_ID = 'rocky_user';
+        const getFilteredUsers = () => {
+            try {
+                const stored = localStorage.getItem('roomUsers');
+                return stored ? JSON.parse(stored) : [];
+            } catch { return []; }
+        };
+        const [onlineUsers, setOnlineUsers] = useState(getFilteredUsers);
+        useEffect(() => {
+            const handleStorage = () => { setOnlineUsers(getFilteredUsers()); };
+            window.addEventListener('storage', handleStorage);
+            return () => window.removeEventListener('storage', handleStorage);
+        }, []);
+
+        const removeMyPresence = () => {
+            try {
+                const stored = localStorage.getItem('roomUsers');
+                if (stored) {
+                    const users = JSON.parse(stored);
+                    const filtered = users.filter(u => !(u.name && u.name.includes(MY_USER_ID)));
+                    localStorage.setItem('roomUsers', JSON.stringify(filtered));
+                }
+            } catch {}
+        };
+        useEffect(() => {
+            window.addEventListener('beforeunload', removeMyPresence);
+            return () => window.removeEventListener('beforeunload', removeMyPresence);
+        }, []);
+
+        const clearAndNavigate = (url) => {
+            removeMyPresence();
+            try {
+                if (roomId) {
+                    const stored = localStorage.getItem('dynamicRooms');
+                    if (stored) {
+                        const rooms = JSON.parse(stored);
+                        const updated = rooms.filter(r => String(r.id) !== String(roomId));
+                        localStorage.setItem('dynamicRooms', JSON.stringify(updated));
+                    }
+                }
+            } catch (e) { console.error('방 삭제 실패:', e); }
+            window.location.href = url;
+        };
+
+        const replayToRoom = () => {
+            removeMyPresence();
+            window.location.href = roomId ? `room.html?id=${roomId}` : 'lobby.html';
+        };
+
+        const clearSessionAndNavigateLobby = async () => {
+            try {
+                const sessionId = roomId ? `battle-${roomId}` : 'battle-solo';
+                await fetch(`/api/v1/build/session/${encodeURIComponent(sessionId)}`, { method: 'DELETE' });
+                ['battleDraft_' + sessionId, 'battleDraftCode_' + sessionId, 'battleDraftMeta_' + sessionId, 'battleSubmittedProblems_' + sessionId, `battleDemoState_${sessionId}`, 'battleSubmission', 'battleProblemData', 'battleProblemTitle', 'myBattleCode', 'opponentBattleCode', 'roomUsers', 'battleProblems', 'battleSettings', 'room_kicked_' + roomId].forEach((key) => localStorage.removeItem(key));
+            } catch (e) {
+                console.error('세션 삭제 실패:', e);
+            }
+            try { removeMyPresence(); } catch {}
+            clearAndNavigate('lobby.html');
+        };
+
+        const storedGold = (() => {
+            try { return parseInt(localStorage.getItem('rocky_gold') || '0', 10); }
+            catch { return 0; }
+        })();
+
+        return (
+            <div className="page-container">
+                <div style={{textAlign:'center', padding:'4px 0', fontSize:'18px', color:'var(--px-warning)', textShadow:'2px 2px 0 #000'}}>
+                    💰 GOLD +{earnedGold.toLocaleString()} (총 보유: {storedGold.toLocaleString()} G)
+                </div>
+                <div className={`result-grid ${isVersusMany ? 'versus-many' : ''}`}>
+                    {isVersusMany ? (
+                        <div className="ranking-panel">
+                            <div className="rank-title">RANKING</div>
+                            <div className="player-list">
+                                {allPlayers.map((p) => (
+                                    <div className={`player-row rank-${p.rank <= 3 ? p.rank : ''}`} key={p.id}>
+                                        <div className="rank-number">{p.rank}</div>
+                                        <div className="player-avatar">{p.avatar}</div>
+                                        <div className="player-nickname">{p.name}</div>
+                                        <div className="player-score-info">
+                                            <span style={{fontSize:'14px',color:'#aaa'}}>{p.delta === 0 ? 'TOP' : `${p.delta > 0 ? '+' : ''}${p.delta}`}</span>
+                                            <span className="score-val">{p.score} PTS</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="ranking-footer">
+                                총 {allPlayers.length}명 참가
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                        <div className="team-panel win">
+                            <div className="team-title">WIN</div>
+                            <div className="player-list">
+                                {winners.map(p => (
+                                    <div className="player-row" key={p.id}>
+                                        <div className="player-avatar">{p.avatar}</div>
+                                        <div className="player-nickname">{p.name}</div>
+                                        <div className="player-score-info">
+                                            현재 점수
+                                            <span className="score-val">{p.score} PTS</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="team-footer">
+                                <div className="team-footer-inner">WIN + {winners.reduce((sum, p) => sum + Math.abs(p.delta), 0)}</div>
+                            </div>
+                        </div>
+
+                        <div className="team-panel lose">
+                            <div className="team-title">LOSE</div>
+                            <div className="player-list">
+                                {losers.map(p => (
+                                    <div className="player-row" key={p.id}>
+                                        <div className="player-avatar">{p.avatar}</div>
+                                        <div className="player-nickname">{p.name}</div>
+                                        <div className="player-score-info">
+                                            현재 점수
+                                            <span className="score-val">{p.score} PTS</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="team-footer">
+                                <div className="team-footer-inner">LOSE {losers.reduce((sum, p) => sum + p.delta, 0)}</div>
+                            </div>
+                        </div>
+                        </>
+                    )}
+
+                    <div className="side-panel">
+                        <div className="code-view-list" style={{overflow:'hidden'}}>
+                            <div className="pixel-text-primary" style={{fontSize:'18px', marginBottom:'2px', textAlign:'center', flexShrink:0}}>PLAYER CODES</div>
+                            <div style={{overflowY:'auto', flex:1, minHeight:0, display:'flex', flexDirection:'column', gap:'4px'}}>
+                                {allPlayers.map(p => (
+                                    <button key={`code-${p.id}`} className="btn-code-view" onClick={() => handleCodeView(p.id)}>
+                                        {p.name.split(' ')[0]} 코드 보기
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="online-user-card">
+                            <div className="online-user-header">ONLINE USERS</div>
+                            {onlineUsers.length === 0 ? (
+                                <div style={{textAlign:'center', color:'#666', fontSize:'16px', padding:'8px 0'}}>접속 중인 유저가 없습니다</div>
+                            ) : (
+                                onlineUsers.map((u, idx) => (
+                                    <div className="online-user-row" key={idx}>
+                                        <div className="online-user-avatar">{u.avatar || '👤'}</div>
+                                        <div className="online-user-name">{u.name || 'Unknown'}</div>
+                                        <div className="online-indicator">●</div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bottom-grid">
+                    <div className="chat-wrapper">
+                        <div className="chat-messages" ref={chatDisplayRef}>
+                            {chatMessages.map((msg, i) => (
+                                <div key={i} style={{marginBottom:'2px'}}>
+                                    {msg.type === 'sys' ? (
+                                        <span style={{color:'var(--px-primary)'}}>[시스템] {msg.text}</span>
+                                    ) : (
+                                        <span>
+                                            <span style={{color:'#888', fontSize:'14px'}}>{msg.time}</span>
+                                            <span style={{color:'var(--px-warning)', fontSize:'14px', marginLeft:'6px'}}>{msg.mode}</span>
+                                            <span className={msg.sender === 'rocky_user' ? 'pixel-text-success' : 'pixel-text-danger'} style={{marginLeft:'6px'}}>{msg.sender}:</span>
+                                            <span style={{color:'#eee', marginLeft:'6px'}}>{msg.text}</span>
+                                        </span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="chat-input-row">
+                            <select className="chat-mode-select" value={chatMode} onChange={e => setChatMode(e.target.value)}>
+                                <option value="ALL">모두에게</option>
+                                <option value="FRIEND">친구에게</option>
+                            </select>
+                            <input type="text" className="chat-input" placeholder="메시지 입력..." value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendChat()} />
+                            <button className="chat-send-btn" onClick={handleSendChat}>전송</button>
+                        </div>
+                    </div>
+                    <div className="action-panel">
+                        <button className="pixel-btn pixel-btn-primary btn-action" onClick={replayToRoom}>다시하기</button>
+                        <button className="pixel-btn pixel-btn-secondary btn-action" onClick={clearSessionAndNavigateLobby}>나가기</button>
+                    </div>
+                </div>
+
+                <div className="ai-floating-btn" onClick={() => setIsAiOpen(true)}>🤖</div>
+                <div className={`ai-floating-panel ${!isAiOpen ? 'hidden' : ''}`}>
+                    <div className="ai-panel-header">
+                        <h4 className="ai-panel-title">ROCKY AI 리뷰어</h4>
+                        <button className="ai-close-btn" onClick={() => setIsAiOpen(false)}>✖</button>
+                    </div>
+                    <div className="ai-messages">
+                        {aiMessages.map((msg, i) => (
+                            <div key={i} className={`ai-msg ${msg.type === 'system' ? 'system' : 'user'}`}>{msg.text}</div>
+                        ))}
+                    </div>
+                    <div className="ai-input-area">
+                        <input type="text" className="ai-input" placeholder="AI에게 질문하기..." value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendAiChat()} />
+                        <button className="ai-submit-btn" onClick={handleSendAiChat}>전송</button>
+                    </div>
+                </div>
+
+                {isCodeModalOpen && (
+                    <div className="code-modal-overlay" onClick={() => setIsCodeModalOpen(false)}>
+                        <div className="code-modal-content" onClick={e => e.stopPropagation()}>
+                            <div className="code-modal-header">
+                                <h4 className="code-modal-title">{modalPlayer ? `${modalPlayer.name.split(' ')[0]} - CODE REVIEW` : 'CODE REVIEW'}</h4>
+                                <button className="code-modal-close" onClick={() => setIsCodeModalOpen(false)}>✖</button>
+                            </div>
+                            <div className="code-modal-grid">
+                                <div className="code-modal-panel pixel-card" style={{borderColor:'var(--px-warning)'}}>
+                                    <div className="pixel-card-header" style={{justifyContent:'center'}}><span style={{color:'var(--px-warning)'}}>PROBLEM</span></div>
+                                    <div style={{display:'flex', gap:'6px', padding:'8px', flexWrap:'wrap'}}>
+                                        {modalProblems.map((p, idx) => (
+                                            <button key={idx} className="btn-code-view" onClick={() => setModalProblemIndex(idx)} style={{flex:'1 1 auto', fontSize:'14px', padding:'4px'}}>
+                                                문제 {idx+1}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="code-modal-problem">
+                                        <div className="problem-title">{modalProblems[modalProblemIndex]?.title || ''}</div>
+                                        <div>{modalProblems[modalProblemIndex]?.description || ''}</div>
+                                        <div className="example-box"><div className="label">INPUT</div><div>{modalProblems[modalProblemIndex]?.input || ''}</div></div>
+                                        <div className="example-box"><div className="label">OUTPUT</div><div>{modalProblems[modalProblemIndex]?.output || ''}</div></div>
+                                    </div>
+                                </div>
+                                <div className="code-modal-panel pixel-card" style={{display:'flex', flexDirection:'column'}}>
+                                    <div className="pixel-card-header" style={{justifyContent:'center'}}><span style={{color:'var(--px-primary)'}}>SOURCE CODE</span></div>
+                                    <div className="code-modal-code" style={{flex:1}}><pre>{modalCode}</pre></div>
+                                    <div className="pixel-card-header" style={{justifyContent:'center', borderTop:'4px solid var(--px-border)'}}><span style={{color:'var(--px-success)'}}>✅ CORRECT ANSWER</span></div>
+                                    <div className="code-modal-code" style={{flex:1}}>
+                                        <pre>{getSolution(modalProblems[modalProblemIndex])}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<ResultApp />);
+</script>
+</body>
+</html>

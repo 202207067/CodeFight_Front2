@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rocky 배틀 로비 - RETRO ARCADE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --px-bg: #212529;
+            --px-surface: #2C3E50;
+            --px-surface-light: #34495E;
+            --px-border: #000000;
+            --px-text: #F7F7F7;
+            --px-text-muted: #B2BEC3;
+            --px-primary: #209CEE;
+            --px-success: #92CC41;
+            --px-warning: #F7D51D;
+            --px-danger: #E76E55;
+            --px-shadow-hard: 4px 4px 0px #000;
+            --px-inset-light: inset -3px -3px 0px rgba(0,0,0,0.4);
+            --px-inset-pressed: inset 3px 3px 0px rgba(0,0,0,0.4);
+            --font-pixel: 'NeoDunggeunmo', 'Galmuri9', 'Press Start 2P', monospace;
+        }
+
+        * { box-sizing: border-box; image-rendering: pixelated; border-radius: 0 !important; }
+        ::selection { background: var(--px-primary); color: var(--px-text); }
+        html, body { margin:0; padding:0; background: var(--px-bg); font-family: var(--font-pixel); color: var(--px-text); line-height:1.4; height:100vh; overflow:hidden; font-size: 20px; }
+        body { background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 16px 16px; }
+        body::after { content:""; position:fixed; inset:0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 2px); pointer-events:none; z-index:9999; }
+
+        .page-container { display:flex; flex-direction:column; height:100vh; padding:10px 18px 8px; gap:6px; position:relative; z-index:10; max-width:1280px; margin:0 auto; overflow:hidden; }
+
+        .pixel-card-header { background: var(--px-surface-light); border:4px solid var(--px-border); border-bottom:none; padding:6px 12px; font-size:20px; color:var(--px-success); text-shadow:2px 2px 0 #000; display:flex; align-items:center; justify-content:space-between; }
+        .pixel-card { background: var(--px-surface); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); padding:10px; }
+
+        .pixel-btn { display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-pixel); font-size:20px; color:#fff; border:4px solid var(--px-border); outline:none; cursor:pointer; padding:8px 14px; position:relative; user-select:none; box-shadow: var(--px-shadow-hard); transition: transform 0.06s, box-shadow 0.06s; }
+        .pixel-btn:active { transform: translate(4px, 4px); box-shadow: none; }
+        .pixel-btn.active { background-color: #209CEE !important; color: white !important; }
+        .pixel-btn.sm { padding: 4px 10px; font-size: 12px; }
+        .pixel-btn-primary { background: var(--px-primary); }
+        .pixel-btn-secondary { background: var(--px-surface-light); }
+        .pixel-btn-danger { background: var(--px-danger); }
+        .pixel-text-muted { color: var(--px-text-muted); }
+        .pixel-input, .pixel-select { font-family:var(--font-pixel); font-size:20px; background:#1a1e21; color:var(--px-text); border:4px solid var(--px-border); outline:none; padding:8px 12px; width:100%; box-shadow: var(--px-inset-light); }
+        .pixel-label { display:block; font-size:18px; color:var(--px-text-muted); margin-bottom:4px; letter-spacing:1px; }
+
+        .pixel-text-primary { color: var(--px-primary); text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; }
+        .pixel-text-warning { color: var(--px-warning); text-shadow: 2px 2px 0 #000; }
+        .pixel-text-danger { color: var(--px-danger); text-shadow: 2px 2px 0 #000; }
+        .pixel-text-success { color: var(--px-success); text-shadow: 2px 2px 0 #000; }
+
+        .room-list-grid { display:grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap:8px; flex: 1 1 0; min-height: 200px; }
+        .room-slot { background: #3d566e; border: 4px solid var(--px-border); box-shadow: var(--px-shadow-hard); padding: 8px 10px; display: flex; flex-direction: column; cursor: pointer; transition: transform 0.06s, box-shadow 0.06s, opacity 0.06s, filter 0.06s; gap: 3px; }
+        .room-slot.full { opacity: 0.65; cursor: not-allowed; }
+        .room-slot.started { background: #243447; border-color: #243447; opacity: 0.85; filter: saturate(0.7) brightness(0.85); cursor: not-allowed; }
+        .room-slot.started .room-number,
+        .room-slot.started .room-title,
+        .room-slot.started .room-players,
+        .room-slot.started .room-status,
+        .room-slot.started .room-meta-pill { color: #c7d2fe; }
+        .room-slot.empty { background: #1f2937; border: 4px dashed #374151; box-shadow: none; cursor: default; pointer-events: none; opacity: 0.4; }
+        .room-number { display:inline-block; background:#1a1e21; border:3px solid var(--px-border); padding:2px 10px; font-size:17px; color:var(--px-warning); text-shadow:1px 1px 0 #000; text-align:center; min-width:50px; }
+        .room-title { font-size:19px; color:var(--px-text); text-align:center; flex-grow:1; display:flex; align-items:center; justify-content:center; }
+        .room-info-row { display:flex; justify-content:space-between; align-items:center; margin-top:2px; border-top:2px dashed #475569; padding-top:2px; }
+        .room-players { background:#1a1e21; border:2px solid var(--px-border); padding:2px 8px; font-size:15px; color:#ccc; }
+        .room-status { font-size:17px; }
+        .room-meta-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:2px; justify-content:center; }
+        .room-meta-pill { background:#1a1e21; border:2px solid var(--px-border); padding:2px 6px; font-size:11px; color:#ddd; white-space:nowrap; }
+        .status-started { color: var(--px-danger); text-shadow:1px 1px 0 #000; }
+        .status-waiting { color: var(--px-success); text-shadow:1px 1px 0 #000; }
+
+        .pagination-box { display:inline-flex; align-items:center; justify-content:center; gap:10px; background: var(--px-surface-light); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); padding:4px 14px; }
+        .page-arrow { cursor:pointer; color:#ccc; font-size:20px; transition:0.15s; }
+        .page-arrow:hover { color: var(--px-warning); }
+        .page-arrow.disabled { opacity:0.3; cursor:default; pointer-events:none; }
+
+        .xp-bar-container { width:100%; height:32px; background:#1a1e21; border:3px solid var(--px-border); position:relative; box-shadow: var(--px-inset-light); }
+        .xp-bar-fill { height:100%; background: var(--px-success); width:75%; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.2); }
+        .xp-bar-text { position:absolute; width:100%; text-align:center; top:0; left:0; font-size:18px; line-height:32px; color:#fff; text-shadow:1px 1px 0 #000; }
+
+        .chat-wrapper { display:flex; flex-direction:column; flex:1 1 0; min-height:0; overflow:hidden; }
+        .chat-messages { flex:1 1 0; background: #1a1e21; border:4px solid var(--px-border); box-shadow: var(--px-inset-light); overflow-y:scroll; overflow-x:hidden; scrollbar-gutter: stable; overscroll-behavior: contain; color:#ccc; font-size:16px; padding:4px; min-height:0; line-height:1.4; }
+        .chat-input-row { display:flex; margin-top:4px; flex-shrink:0; height:40px; border:4px solid var(--px-border); background:#1a1e21; box-shadow: var(--px-inset-light); }
+        .chat-mode-select { background: var(--px-surface-light); border:none; border-right:4px solid var(--px-border); color:#fff; padding:0 8px; font-family:var(--font-pixel); font-size:14px; cursor:pointer; appearance:none; text-align:center; }
+        .chat-mode-select option { background: var(--px-surface); color:#fff; font-family:var(--font-pixel); }
+        .chat-input { flex:1; background:transparent; border:none; color:var(--px-text); padding:4px 8px; font-family:var(--font-pixel); font-size:16px; outline:none; }
+        .chat-send-btn { background: var(--px-surface-light); color:#fff; border:none; border-left:4px solid var(--px-border); padding:0 12px; font-family:var(--font-pixel); font-size:16px; cursor:pointer; transition:0.2s; white-space:nowrap; }
+
+        .data-table { width:100%; border-collapse:collapse; font-size:16px; text-align:center; }
+        .data-table th, .data-table td { border:3px solid var(--px-border); padding:4px 4px; }
+
+        .tab-btn { background: var(--px-surface-light); border:4px solid var(--px-border); color:#ccc; padding:3px; cursor:pointer; flex-grow:1; font-family:var(--font-pixel); font-size:16px; transition:0.1s; }
+        .tab-btn.active { background: var(--px-primary); color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,0.4); box-shadow: var(--px-inset-pressed); }
+        .rank-bronze { color: #cd7f32; text-shadow: 1px 1px 0 #000; }
+        .rank-silver { color: #c0c0c0; text-shadow: 1px 1px 0 #000; }
+        .rank-gold { color: #ffd700; text-shadow: 1px 1px 0 #000; }
+        .rank-platinum { color: #00e5ff; text-shadow: 1px 1px 0 #000; }
+        .rank-diamond { color: #b9f2ff; text-shadow: 1px 1px 0 #000; }
+        .rank-master { color: #ff4081; text-shadow: 1px 1px 0 #000; }
+        .tier-icon-wrap { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; margin-right:4px; font-size:15px; }
+        .profile-btn { font-size:15px; padding:5px 12px; border:3px solid var(--px-border); box-shadow:3px 3px 0px #000; background: var(--px-surface-light); color: var(--px-text); cursor:pointer; transition: transform 0.06s, box-shadow 0.06s; font-family:var(--font-pixel); }
+        .profile-btn:active { transform: translate(3px, 3px); box-shadow: none; }
+
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; display:flex; align-items:center; justify-content:center; }
+        .modal-content { background: var(--px-surface); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); padding:20px; width:800px; max-width:92%; text-align:left; }
+
+        .problem-modal-box { background: var(--px-surface); border:4px solid var(--px-primary); box-shadow: 0 0 0 4px #000, 0 0 30px rgba(32,156,238,0.5); padding: 40px 60px; text-align:center; animation: gameOverPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .problem-modal-text { font-family:var(--font-pixel); font-size:28px; color:var(--px-primary); text-shadow:3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; margin-bottom:16px; word-break:keep-all; line-height:1.6; }
+        .problem-modal-sub { font-family:var(--font-pixel); font-size:18px; color:#999; letter-spacing:2px; animation: blink 1s step-end infinite; }
+
+        @keyframes gameOverPop { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .mode-select-btn { flex:1; aspect-ratio:1.5; border:4px solid var(--px-border); background: var(--px-surface-light); display:flex; align-items:center; justify-content:center; font-size:24px; cursor:pointer; transition:0.1s; color:#ccc; }
+        .mode-select-btn.active { background: var(--px-primary); color:#fff; box-shadow: var(--px-inset-pressed); }
+        .mode-select-btn:hover:not(.active) { background: #3d5a80; }
+
+        .input-row { display:flex; align-items:stretch; border:4px solid var(--px-border); background: #1a1e21; box-shadow: var(--px-inset-light); }
+        .input-label { background: var(--px-surface-light); padding:8px 12px; display:flex; align-items:center; justify-content:center; border-right:4px solid var(--px-border); color:#ccc; white-space:nowrap; min-width:100px; font-size:18px; }
+        .modal-input-new { background:transparent; border:none; color:#fff; padding:8px 12px; outline:none; font-family:var(--font-pixel); width:100%; font-size:20px; }
+        .modal-select-new { background:#1a1e21; border:3px solid var(--px-border); color:#ccc; padding:6px 10px; outline:none; font-family:var(--font-pixel); font-size:18px; cursor:pointer; text-align:center; appearance:none; }
+        .modal-select-new:focus { border-color: var(--px-primary); outline:2px dashed var(--px-warning); outline-offset:2px; }
+
+        .inventory-panel { background: var(--px-surface); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); padding:7px; display:flex; flex-direction:column; gap:2px; width:100%; }
+        .inventory-title { font-size:16px; color:var(--px-warning); text-shadow:2px 2px 0 #000; text-align:center; padding-bottom:3px; border-bottom:2px dashed #475569; }
+        .gold-row { display:flex; justify-content:space-between; align-items:center; padding:3px 5px; background:#1a1e21; border:3px solid var(--px-border); }
+        .gold-label { font-size:15px; color:var(--px-primary); }
+        .gold-val { font-size:17px; color:var(--px-warning); text-shadow:1px 1px 0 #000; }
+        .item-row { display:flex; justify-content:space-between; align-items:center; padding:2px 5px; border-bottom:2px dashed #475569; }
+        .item-name { font-size:13px; color:#ddd; display:flex; align-items:center; gap:3px; }
+        .item-count { font-size:13px; color:var(--px-success); text-shadow:1px 1px 0 #000; }
+        .item-hint { font-size:10px; color:#888; text-align:center; padding-top:1px; }
+
+        ::-webkit-scrollbar { width: 14px; }
+        ::-webkit-scrollbar-track { background: var(--px-surface); border-left: 2px solid #000; }
+        ::-webkit-scrollbar-thumb { background: var(--px-primary); border: 2px solid #000; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--px-warning); }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="js/problems.js"></script>
+    <script type="text/babel">
+    function LobbyApp() {
+        const { useState, useEffect, useRef } = React;
+        const getSolution = (problem) => {
+            if (problem?.solutionJAVA) return problem.solutionJAVA;
+            if (!problem?.title) return '// 정답이 준비되지 않았습니다.';
+            const all = [].concat(problems['쉬움'] || [], problems['보통'] || [], problems['어려움'] || []);
+            const match = all.find(p => p.title === problem.title);
+            return match?.solutionJAVA || '// 정답이 준비되지 않았습니다.';
+        };
+        const [showModal, setShowModal] = useState(false);
+        const [showPracticeModal, setShowPracticeModal] = useState(false);
+        const [showModeFilterModal, setShowModeFilterModal] = useState(false);
+        const [activeTab, setActiveTab] = useState('일반');
+        const [playerMode, setPlayerMode] = useState('1/N');
+        const [roomTitle, setRoomTitle] = useState('');
+        const [difficulty, setDifficulty] = useState('보통');
+        const [language, setLanguage] = useState('JAVA');
+        const [roomPwd, setRoomPwd] = useState('');
+        const [problemCount, setProblemCount] = useState('5');
+        const [maxPlayers, setMaxPlayers] = useState('8');
+        const [chatMessages, setChatMessages] = useState([]);
+        const [chatMsg, setChatMsg] = useState('');
+        const [chatMode, setChatMode] = useState('ALL');
+        const [practiceLang, setPracticeLang] = useState('JAVA');
+        const [practiceDiff, setPracticeDiff] = useState('보통');
+        const [practiceCount, setPracticeCount] = useState('5');
+        const [currentPage, setCurrentPage] = useState(0);
+        const [showCodeModal, setShowCodeModal] = useState(false);
+        const [codeHistory, setCodeHistory] = useState([]);
+        const [selectedHistoryIndex, setSelectedHistoryIndex] = useState(0);
+        const [modeFilter, setModeFilter] = useState('ALL');
+        const [selectedHistoryProblemIndex, setSelectedHistoryProblemIndex] = useState(0);
+        const [selectedHistoryIds, setSelectedHistoryIds] = useState([]);
+        const chatMessagesRef = useRef(null);
+        const roomsPerPage = 4;
+
+        const [gold, setGold] = useState(() => {
+            try { const v = parseInt(localStorage.getItem('rocky_gold') || '0', 10); if (v < 10000) { localStorage.setItem('rocky_gold', '10000'); return 10000; } return v; }
+            catch { return 10000; }
+        });
+        const [itemInventory, setItemInventory] = useState(() => {
+            try {
+                const stored = localStorage.getItem('rocky_items');
+                return stored ? { line: 2, symbol: 2, buildLimit: 2, paint: 2, ...JSON.parse(stored) } : { line: 2, symbol: 2, buildLimit: 2, paint: 2 };
+            } catch { return { line: 2, symbol: 2, buildLimit: 2, paint: 2 }; }
+        });
+        const [showItemShop, setShowItemShop] = useState(false);
+
+        const defaultRooms = [
+            { id: 2, title: '3대3 알고리즘 팀전', status: 'WAITING', players: '1/1', mode: '1/N', diff: '어려움', lang: 'PYTHON', time: '60분', pwd: '' },
+            { id: 3, title: '보스 레이드 (내가 보스임)', status: 'WAITING', players: '1/8', mode: '1/N', diff: '어려움', lang: 'JAVA', time: '45분', pwd: 'boss123' },
+            { id: 4, title: 'C++ 장인 구함 빠른 진행', status: 'STARTED', players: '1/N', mode: '1/N', diff: '보통', lang: 'C++', time: '15분', pwd: '' },
+        ];
+        const [rooms, setRooms] = useState(defaultRooms);
+
+        const normalizeCodeHistoryEntry = (entry) => {
+            if (!entry || typeof entry !== 'object') return null;
+            const problems = Array.isArray(entry.problems) ? entry.problems : [];
+            const codes = Array.isArray(entry.codes) ? entry.codes : [];
+            const fallbackCode = typeof entry.code === 'string' ? entry.code : '';
+            const normalizedCodes = codes.length > 0 ? codes : [fallbackCode];
+
+            return {
+                historyId: entry.historyId || `${entry.roomId || 'solo'}::${entry.submittedAt || Date.now()}`,
+                roomId: entry.roomId || '',
+                submittedAt: entry.submittedAt || new Date().toISOString(),
+                lang: entry.lang || 'UNKNOWN',
+                problems,
+                codes: normalizedCodes,
+                code: fallbackCode || normalizedCodes[0] || ''
+            };
+        };
+
+        const normalizeRoomEntry = (room) => {
+            if (!room || typeof room !== 'object') return room;
+            const next = { ...room };
+            if (next.mode === 'N/N') next.mode = '1/N';
+            if (next.players === 'N/N') next.players = '1/8';
+            if (next.mode === '1/N') {
+                const playersText = String(next.players || '1/8');
+                if (!playersText.includes('/') || playersText === '1/N') next.players = '1/8';
+            }
+            return next;
+        };
+
+        const normalizeRoomList = (list) => (Array.isArray(list) ? list.map(normalizeRoomEntry) : []);
+
+        const readCodeHistory = () => {
+            try {
+                const stored = localStorage.getItem('codeHistory_rocky_user');
+                const parsed = stored ? JSON.parse(stored) : [];
+                if (!Array.isArray(parsed)) return [];
+                return parsed
+                    .map(normalizeCodeHistoryEntry)
+                    .filter(Boolean)
+                    .filter(entry => entry.mode !== 'PRACTICE' && entry.roomId !== 'PRACTICE')
+                    .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+            } catch (e) {
+                return [];
+            }
+        };
+
+        useEffect(() => {
+            const loadRooms = () => {
+                const stored = localStorage.getItem('dynamicRooms');
+                const dynamicRooms = stored ? JSON.parse(stored) : [];
+                const normalized = normalizeRoomList(dynamicRooms);
+                if (JSON.stringify(normalized) !== JSON.stringify(dynamicRooms)) {
+                    localStorage.setItem('dynamicRooms', JSON.stringify(normalized));
+                }
+                setRooms([...defaultRooms, ...normalized]);
+                setCurrentPage(0);
+            };
+            const loadCodeHistory = () => {
+                setCodeHistory(readCodeHistory());
+            };
+            loadRooms();
+            loadCodeHistory();
+            const handleStorage = (e) => {
+                if (e.key === 'dynamicRooms') {
+                    const updated = e.newValue ? JSON.parse(e.newValue) : [];
+                    const normalized = normalizeRoomList(updated);
+                    if (JSON.stringify(normalized) !== JSON.stringify(updated)) {
+                        localStorage.setItem('dynamicRooms', JSON.stringify(normalized));
+                    }
+                    setRooms([...defaultRooms, ...normalized]);
+                    setCurrentPage(0);
+                }
+            };
+            const handleCodeStorage = (e) => {
+                if (e.key === 'codeHistory_rocky_user') {
+                    setCodeHistory(readCodeHistory());
+                }
+            };
+            window.addEventListener('storage', handleStorage);
+            window.addEventListener('storage', handleCodeStorage);
+            window.addEventListener('pageshow', loadRooms);
+            return () => { window.removeEventListener('storage', handleStorage); window.removeEventListener('storage', handleCodeStorage); window.removeEventListener('pageshow', loadRooms); };
+        }, []);
+
+        useEffect(() => {
+            setSelectedHistoryIds(prev => {
+                if (prev.length === 0) return prev;
+                const validIds = new Set(codeHistory.map(entry => entry.historyId));
+                const next = prev.filter(id => validIds.has(id));
+                return next.length === prev.length ? prev : next;
+            });
+        }, [codeHistory]);
+
+        useEffect(() => {
+            const el = chatMessagesRef.current;
+            if (!el) return;
+            el.scrollTop = el.scrollHeight;
+        }, [chatMessages]);
+
+        useEffect(() => {
+            setSelectedHistoryIndex(prev => {
+                if (codeHistory.length === 0) return 0;
+                return Math.min(prev, codeHistory.length - 1);
+            });
+        }, [codeHistory.length]);
+
+        const openCodeHistory = () => {
+            setSelectedHistoryIndex(0);
+            setSelectedHistoryProblemIndex(0);
+            setSelectedHistoryIds([]);
+            setShowCodeModal(true);
+        };
+
+        const persistCodeHistory = (nextHistory) => {
+            localStorage.setItem('codeHistory_rocky_user', JSON.stringify(nextHistory));
+            setCodeHistory(nextHistory);
+        };
+
+        const itemPrices = { line: 50, symbol: 30, buildLimit: 70, paint: 80 };
+        const handleBuyItem = (type) => {
+            const price = itemPrices[type];
+            if (gold < price) return;
+            const nextGold = gold - price;
+            const nextItems = { ...itemInventory, [type]: itemInventory[type] + 1 };
+            setGold(nextGold);
+            setItemInventory(nextItems);
+            localStorage.setItem('rocky_gold', String(nextGold));
+            localStorage.setItem('rocky_items', JSON.stringify(nextItems));
+        };
+
+        const toggleHistorySelection = (historyId) => {
+            setSelectedHistoryIds(prev => prev.includes(historyId)
+                ? prev.filter(id => id !== historyId)
+                : [...prev, historyId]);
+        };
+
+        const handleHistoryView = (idx) => {
+            setSelectedHistoryIndex(idx);
+            setSelectedHistoryProblemIndex(0);
+        };
+
+        const selectAllHistory = () => {
+            if (selectedHistoryIds.length === codeHistory.length) {
+                setSelectedHistoryIds([]);
+                return;
+            }
+            setSelectedHistoryIds(codeHistory.map(entry => entry.historyId));
+        };
+
+        const deleteSelectedHistory = () => {
+            if (selectedHistoryIds.length === 0) return;
+            const nextHistory = codeHistory.filter(entry => !selectedHistoryIds.includes(entry.historyId));
+            persistCodeHistory(nextHistory);
+            setSelectedHistoryIds([]);
+            setSelectedHistoryIndex(prev => {
+                if (nextHistory.length === 0) return 0;
+                return Math.min(prev, nextHistory.length - 1);
+            });
+            setSelectedHistoryProblemIndex(0);
+        };
+
+        const filteredRooms = rooms.filter(r => modeFilter === 'ALL' || r.mode === modeFilter);
+        const totalPages = Math.max(1, Math.ceil(filteredRooms.length / roomsPerPage));
+        const paginatedRooms = filteredRooms.slice(currentPage * roomsPerPage, (currentPage + 1) * roomsPerPage);
+
+        const users = [
+            { name: '알고리즘노인', rank: '플래티넘' },
+            { name: '코딩초보', rank: '브론즈' },
+            { name: 'java_master', rank: '골드' },
+            { name: 'python_king', rank: '다이아' },
+            { name: 'rocky_user', rank: '플래티넘' },
+        ];
+
+        const tierOrder = { '마스터': 6, '다이아': 5, '플래티넘': 4, '골드': 3, '실버': 2, '브론즈': 1 };
+        const tierIcons = {
+            '브론즈': '🥉',
+            '실버': '🥈',
+            '골드': '🥇',
+            '플래티넘': '💠',
+            '다이아': '💎',
+            '마스터': '👑'
+        };
+
+        const getSortedUsers = () => {
+            if (activeTab === '랭킹') {
+                return [...users].sort((a, b) => (tierOrder[b.rank] || 0) - (tierOrder[a.rank] || 0));
+            }
+            return users;
+        };
+
+        const handleSendChat = () => {
+            if (!chatMsg.trim()) return;
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const modeLabel = chatMode === 'ALL' ? '[전체]' : '[친구]';
+            setChatMessages(prev => [...prev, { sender: 'rocky_user', text: chatMsg, time: timeStr, mode: modeLabel }]);
+            setChatMsg('');
+        };
+
+        const createRoom = () => setShowModal(true);
+        const parseRoomOccupancy = (room) => {
+            const raw = room?.players || '1/N';
+            const [currentRaw, maxRaw] = String(raw).split('/');
+            const max = Math.max(1, parseInt(maxRaw, 10) || 8);
+            const kicked = parseInt(localStorage.getItem('room_kicked_' + room.id) || '0', 10);
+            const current = Math.max(1, max - kicked);
+            return { current, max };
+        };
+
+        const handleConfirmCreate = () => {
+            if (!roomTitle.trim()) { alert('방 제목을 입력해주세요!'); return; }
+            let currentDynamic = [];
+            try {
+                const stored = localStorage.getItem('dynamicRooms');
+                currentDynamic = stored ? JSON.parse(stored) : [];
+                if (!Array.isArray(currentDynamic)) currentDynamic = [];
+            } catch (e) {
+                currentDynamic = [];
+            }
+            
+            const maxDynamicId = currentDynamic.reduce((max, r) => Math.max(max, parseInt(r.id) || 0), 0);
+            const newId = Math.max(4, maxDynamicId) + 1;
+            localStorage.removeItem('room_kicked_' + String(newId));
+            
+            const newRoom = { 
+                id: newId, 
+                title: roomTitle, 
+                status: 'WAITING', 
+                players: playerMode === '1/1' ? '1/1' : `1/${maxPlayers}`, 
+                mode: playerMode, 
+                diff: difficulty, 
+                lang: language, 
+                pwd: roomPwd, 
+                count: problemCount, 
+                createdAt: Date.now() 
+            };
+            
+            const updated = [...currentDynamic, newRoom];
+            localStorage.setItem('dynamicRooms', JSON.stringify(updated));
+            setRooms([...defaultRooms, ...updated]);
+            setShowModal(false);
+            
+            const params = new URLSearchParams({ 
+                id: String(newId), 
+                title: roomTitle, 
+                pwd: roomPwd, 
+                mode: playerMode, 
+                diff: difficulty, 
+                lang: language, 
+                count: problemCount, 
+                maxPlayers: playerMode === '1/1' ? '1' : maxPlayers 
+            });
+            window.location.href = `room.html?${params.toString()}`;
+        };
+
+        const goPrevPage = () => setCurrentPage(p => Math.max(0, p - 1));
+        const goNextPage = () => setCurrentPage(p => Math.min(totalPages - 1, p + 1));
+
+        const selectedHistory = codeHistory[selectedHistoryIndex] || null;
+        const selectedHistoryProblems = selectedHistory?.problems || [];
+        const selectedHistoryCodes = selectedHistory?.codes || [];
+        const selectedHistoryProblem = selectedHistoryProblems[selectedHistoryProblemIndex] || selectedHistoryProblems[0] || null;
+        const selectedHistoryCode = selectedHistoryCodes[selectedHistoryProblemIndex] || selectedHistoryCodes[0] || selectedHistory?.code || '// 저장된 코드가 없습니다.';
+
+        return (
+        <>
+            <div className="page-container">
+                {/* 상단 영역: 방 + 프로필 */}
+                <div className="row g-2" style={{ flexShrink: 0, minHeight: 0 }}>
+                    <div className="col-lg-8" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="pixel-card d-flex flex-column" style={{ flex: 1, gap: '4px' }}>
+                            <div className="room-list-grid">
+                                {Array.from({ length: roomsPerPage }, (_, i) => {
+                                    const room = paginatedRooms[i];
+                                    if (room) {
+                                        const roomLang = room.lang || 'JAVA';
+                                        const roomDiff = room.diff || '보통';
+                                        const roomCount = room.count || '5';
+                                        const { current, max } = parseRoomOccupancy(room);
+                                        const isFull = current >= max;
+                                        return (
+                                            <div className={`room-slot ${isFull ? 'full' : ''} ${room.status === 'STARTED' ? 'started' : ''}`} key={room.id} onClick={() => {
+                                                if (room.status === 'WAITING' && !isFull) {
+                                                    const p = new URLSearchParams({ 
+                                                        id: room.id, 
+                                                        title: room.title, 
+                                                        mode: room.mode || '1/1', 
+                                                        diff: room.diff || '보통', 
+                                                        lang: room.lang || 'JAVA', 
+                                                        pwd: room.pwd || '',
+                                                        count: room.count || '5',
+                                                        maxPlayers: room.players ? String(room.players).split('/')[1] || '8' : '8'
+                                                    });
+                                                    window.location.href = `room.html?${p.toString()}`;
+                                                }
+                                            }}>
+                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                    <span className="room-number">{room.id}</span>
+                                                    <span className="room-title">{room.title}</span>
+                                                </div>
+                                                <div className="room-info-row">
+                                                    <span className="room-players">{current}/{max}</span>
+                                                    <span className={`room-status ${room.status === 'STARTED' ? 'status-started' : 'status-waiting'}`}>{room.status}</span>
+                                                </div>
+                                                <div className="room-meta-row">
+                                                    <span className="room-meta-pill">{roomLang}</span>
+                                                    <span className="room-meta-pill">{roomDiff}</span>
+                                                    <span className="room-meta-pill">{room.mode || '1/1'}</span>
+                                                    <span className="room-meta-pill">{roomCount}문제</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    } else {
+                                        return (
+                                            <div className="room-slot empty" key={`empty-${i}`}>
+                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                    <span className="room-number">-</span>
+                                                    <span className="room-title" style={{ color: '#555', fontSize: '13px' }}>EMPTY</span>
+                                                </div>
+                                                <div className="room-info-row">
+                                                    <span className="room-players">-</span>
+                                                    <span className="room-status" style={{ color: '#555' }}>-</span>
+                                                </div>
+                                                <div className="room-meta-row">
+                                                    <span className="room-meta-pill" style={{ color: '#555' }}>LANG</span>
+                                                    <span className="room-meta-pill" style={{ color: '#555' }}>DIFF</span>
+                                                    <span className="room-meta-pill" style={{ color: '#555' }}>TIME</span>
+                                                    <span className="room-meta-pill" style={{ color: '#555' }}>CNT</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                })}
+                            </div>
+                            <div className="text-center" style={{ marginTop: 'auto', paddingTop: '4px' }}>
+                                <div className="pagination-box">
+                                    <span className={`page-arrow ${currentPage <= 0 ? 'disabled' : ''}`} onClick={goPrevPage}>◀</span>
+                                    <span style={{ color: '#ddd', fontSize: '20px' }}>{currentPage + 1} / {totalPages}</span>
+                                    <span className={`page-arrow ${currentPage >= totalPages - 1 ? 'disabled' : ''}`} onClick={goNextPage}>▶</span>
+                                </div>
+                            </div>
+                            <div className="d-flex justify-content-between gap-2" style={{ marginTop: '4px' }}>
+                                <button className="pixel-btn pixel-btn-primary flex-grow-1" onClick={createRoom} style={{fontSize:'17px', padding:'6px 10px'}}>방만들기</button>
+                                <button className="pixel-btn pixel-btn-secondary flex-grow-1" onClick={() => setShowModeFilterModal(true)} style={{fontSize:'17px', padding:'6px 10px'}}>모드 선택</button>
+                                <button className="pixel-btn pixel-btn-secondary flex-grow-1" onClick={() => setShowPracticeModal(true)} style={{fontSize:'17px', padding:'6px 10px'}}>연습모드</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-lg-4" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="pixel-card d-flex flex-column justify-content-center align-items-center" style={{ padding: '10px', gap: '4px' }}>
+                            <div className="pixel-text-success" style={{ fontSize: '20px', letterSpacing: '2px' }}>PROFILE</div>
+                            <div style={{ width: '54px', height: '54px', background: 'linear-gradient(135deg, #1a1030, #0a0a20)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '4px solid var(--px-border)', boxShadow: 'var(--px-shadow-hard)', color: 'var(--px-primary)', textShadow: '2px 2px 0 #000' }}>ME</div>
+                            <h3 style={{ color: '#eee', margin: '2px 0', fontSize: '17px' }}>rocky_user</h3>
+                            <div style={{ color: '#999', fontSize: '14px' }}>Lv.42 | 플래티넘 II</div>
+                            <button className="profile-btn" style={{ marginTop: '3px' }} onClick={openCodeHistory}>내 코드 보기</button>
+                        </div>
+                        <div className="inventory-panel" style={{ marginTop: '8px' }}>
+                            <div className="inventory-title">💰 아이템 &amp; 골드</div>
+                            <div className="gold-row">
+                                <span className="gold-label">보유 골드</span>
+                                <span className="gold-val">{gold.toLocaleString()} G</span>
+                            </div>
+                            <div className="item-row">
+                                <span className="item-name">💣 수류탄 아이템</span>
+                                <span className="item-count">{itemInventory.line}개</span>
+                            </div>
+                            <div className="item-row">
+                                <span className="item-name">🔣 특수기호 아이템</span>
+                                <span className="item-count">{itemInventory.symbol}개</span>
+                            </div>
+                            <div className="item-row">
+                                <span className="item-name">🚫 빌드제한 아이템</span>
+                                <span className="item-count">{itemInventory.buildLimit}개</span>
+                            </div>
+                            <div className="item-row">
+                                <span className="item-name">🎨 페인트 아이템</span>
+                                <span className="item-count">{itemInventory.paint}개</span>
+                            </div>
+                            <div className="item-hint">게임당 각 아이템 최대 2회</div>
+                            <button className="pixel-btn pixel-btn-primary" style={{width:'100%', fontSize:'13px', padding:'2px', marginTop:'2px'}} onClick={() => setShowItemShop(true)}>🛒 아이템 구매</button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 하단 영역: 채팅 + 유저리스트 */}
+                <div className="row g-1" style={{ flex: 1, minHeight: 0 }}>
+                    <div className="col-lg-8" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                        <div className="chat-wrapper pixel-card" style={{ padding: '4px', flex: 1, minHeight: 0 }}>
+                            <div className="chat-messages" ref={chatMessagesRef}>
+                                {chatMessages.length === 0 ? (
+                                    <div className="d-flex h-100 align-items-center justify-content-center">
+                                        <span className="pixel-text-muted" style={{ fontSize: '24px' }}>CHAT WINDOW</span>
+                                    </div>
+                                ) : (
+                                    chatMessages.map((msg, i) => (
+                                        <div key={i} style={{ marginBottom: '4px', color: '#eee', fontSize: '16px' }}>
+                                            <span style={{ color: '#888', fontSize: '16px' }}>{msg.time}</span>
+                                            <span style={{ color: 'var(--px-warning)', marginLeft: '8px', fontSize: '16px' }}>{msg.mode}</span>
+                                            <span style={{ color: 'var(--px-success)', marginLeft: '8px' }}>{msg.sender}</span>
+                                            <br/>{msg.text}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                            <div className="chat-input-row">
+                                <select className="chat-mode-select" value={chatMode} onChange={e => setChatMode(e.target.value)}>
+                                    <option value="ALL">모두에게</option>
+                                    <option value="FRIEND">친구에게</option>
+                                </select>
+                                <input type="text" className="chat-input" value={chatMsg} onChange={e => setChatMsg(e.target.value)} placeholder="메시지 입력..." onKeyDown={e => e.key === 'Enter' && handleSendChat()} />
+                                <button className="chat-send-btn" onClick={handleSendChat}>전송</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-lg-4" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div className="pixel-card h-100 d-flex flex-column">
+                            <div className="d-flex gap-2 mb-1">
+                                <button className={`tab-btn ${activeTab === '일반' ? 'active' : ''}`} onClick={() => setActiveTab('일반')}>일반</button>
+                                <button className={`tab-btn ${activeTab === '랭킹' ? 'active' : ''}`} onClick={() => setActiveTab('랭킹')}>랭킹</button>
+                            </div>
+                            <div className="flex-grow-1" style={{ overflowY: 'auto', minHeight: 0 }}>
+                                <table className="data-table">
+                                    <thead><tr><th>티어</th><th>닉네임</th></tr></thead>
+                                    <tbody>
+                                        {getSortedUsers().map((u, i) => (
+                                            <tr key={`${activeTab}-${i}`}>
+                                                <td className="pixel-text-warning">
+                                                    <span className="tier-icon-wrap">{tierIcons[u.rank] || '⭐'}</span>
+                                                    {u.rank}
+                                                </td>
+                                                <td>{u.name}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {showModal && (
+                <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-center pixel-text-primary" style={{ marginBottom: '16px', fontSize: '22px' }}>CREATE ROOM</h3>
+                        <div className="d-flex justify-content-between gap-3 mb-4">
+                            {['1/1', '1/N'].map(mode => (
+                                <div key={mode} className={`mode-select-btn ${playerMode === mode ? 'active' : ''}`} onClick={() => setPlayerMode(mode)}>{mode}</div>
+                            ))}
+                        </div>
+                        <div className="input-row mb-3">
+                            <span className="input-label">방 제목</span>
+                            <input type="text" className="modal-input-new" value={roomTitle} onChange={e => setRoomTitle(e.target.value)} autoFocus />
+                        </div>
+                        <div className="d-flex gap-3 mb-3">
+                            <select className="modal-select-new flex-grow-1" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
+                                <option value="쉬움">난이도 (쉬움)</option><option value="보통">난이도 (보통)</option><option value="어려움">난이도 (어려움)</option>
+                            </select>
+                            <select className="modal-select-new flex-grow-1" value={language} onChange={e => setLanguage(e.target.value)}>
+                                <option value="JAVA">언어 (JAVA)</option><option value="PYTHON">언어 (PYTHON)</option><option value="C++">언어 (C++)</option>
+                            </select>
+                        </div>
+                        <div className="d-flex gap-3 mb-3">
+                            {playerMode === '1/N' ? (
+                                <select className="modal-select-new flex-grow-1" value={maxPlayers} onChange={e => setMaxPlayers(e.target.value)}>
+                                    <option value="2">최대 2명</option>
+                                    <option value="3">최대 3명</option>
+                                    <option value="4">최대 4명</option>
+                                    <option value="5">최대 5명</option>
+                                    <option value="6">최대 6명</option>
+                                    <option value="7">최대 7명</option>
+                                    <option value="8">최대 8명</option>
+                                </select>
+                            ) : null}
+                            <select className="modal-select-new flex-grow-1" value={problemCount} onChange={e => setProblemCount(e.target.value)}>
+                                <option value="3">문제 3개</option>
+                                <option value="4">문제 4개</option>
+                                <option value="5">문제 5개</option>
+                                <option value="6">문제 6개</option>
+                                <option value="7">문제 7개</option>
+                                <option value="8">문제 8개</option>
+                                <option value="9">문제 9개</option>
+                                <option value="10">문제 10개</option>
+                            </select>
+                        </div>
+                        <div className="input-row mb-4">
+                            <span className="input-label">비밀번호</span>
+                            <input type="password" className="modal-input-new" value={roomPwd} onChange={e => setRoomPwd(e.target.value)} />
+                        </div>
+                        <div className="d-flex justify-content-end gap-3">
+                            <button className="pixel-btn pixel-btn-primary" style={{ minWidth: '120px' }} onClick={handleConfirmCreate}>생성하기</button>
+                            <button className="pixel-btn pixel-btn-secondary" style={{ minWidth: '120px' }} onClick={() => setShowModal(false)}>나가기</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showModeFilterModal && (
+                <div className="modal-overlay" onClick={() => setShowModeFilterModal(false)}>
+                    <div className="modal-content" style={{ width: '300px' }} onClick={e => e.stopPropagation()}>
+                        <h3 className="text-center pixel-text-secondary" style={{ marginBottom: '16px', fontSize: '22px' }}>MODE SELECT</h3>
+                        <div className="d-flex flex-column gap-3 mb-4">
+                            {['ALL', '1/1', '1/N'].map(mode => (
+                                <button
+                                    key={mode}
+                                    onClick={() => {
+                                        setModeFilter(mode);
+                                        setCurrentPage(0);
+                                        setShowModeFilterModal(false);
+                                    }}
+                                    className={`pixel-btn ${modeFilter === mode ? 'pixel-btn-primary' : 'pixel-btn-secondary'}`}
+                                >
+                                    {mode === 'ALL' ? '모두보기' : mode}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="text-center mt-3">
+                            <button className="pixel-btn pixel-btn-secondary w-100" onClick={() => setShowModeFilterModal(false)}>취소</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showPracticeModal && (
+                <div className="modal-overlay" onClick={() => setShowPracticeModal(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-center pixel-text-primary" style={{ marginBottom: '16px', fontSize: '22px' }}>PRACTICE MODE</h3>
+                        <div className="d-flex gap-3 mb-4">
+                            <select className="modal-select-new flex-grow-1" value={practiceLang} onChange={e => setPracticeLang(e.target.value)}>
+                                <option value="JAVA">언어 (JAVA)</option><option value="PYTHON">언어 (PYTHON)</option><option value="C++">언어 (C++)</option>
+                            </select>
+                            <select className="modal-select-new flex-grow-1" value={practiceCount} onChange={e => setPracticeCount(e.target.value)}>
+                                <option value="3">문제 3개</option>
+                                <option value="4">문제 4개</option>
+                                <option value="5">문제 5개</option>
+                                <option value="6">문제 6개</option>
+                                <option value="7">문제 7개</option>
+                                <option value="8">문제 8개</option>
+                                <option value="9">문제 9개</option>
+                                <option value="10">문제 10개</option>
+                            </select>
+                        </div>
+                        <div className="d-flex justify-content-end gap-3">
+                            <button className="pixel-btn pixel-btn-primary" style={{ minWidth: '120px' }} onClick={() => { window.location.href = `practice.html?lang=${practiceLang}&count=${practiceCount}`; }}>시작</button>
+                            <button className="pixel-btn pixel-btn-secondary" style={{ minWidth: '120px' }} onClick={() => setShowPracticeModal(false)}>나가기</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showItemShop && (
+                <div className="modal-overlay" onClick={() => setShowItemShop(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth:'440px', padding:'16px'}}>
+                        <h3 className="text-center pixel-text-primary" style={{ marginBottom: '12px', fontSize: '22px' }}>🛒 아이템 구매</h3>
+                        <div style={{ marginBottom: '6px', fontSize: '14px', color: 'var(--px-warning)', textAlign: 'center' }}>보유 골드: {gold.toLocaleString()} G</div>
+                        {[
+                            { type: 'line', icon: '💣', name: '수류탄 아이템', desc: '해당 줄 삭제' },
+                            { type: 'symbol', icon: '🔣', name: '특수기호 아이템', desc: '특수기호 추가/삭제' },
+                            { type: 'buildLimit', icon: '🚫', name: '빌드제한 아이템', desc: '상대 빌드 5회 제한' },
+                            { type: 'paint', icon: '🎨', name: '페인트 아이템', desc: '랜덤 페인트 스플래시' }
+                        ].map(item => (
+                            <div key={item.type} className="item-option" style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px'}}>
+                                <div className="item-icon">{item.icon}</div>
+                                <div className="item-info" style={{flex:1}}>
+                                    <div className="item-name">{item.name}</div>
+                                    <div className="item-desc">{item.desc}</div>
+                                    <div style={{fontSize:'12px', color:'var(--px-success)', marginTop:'2px'}}>보유: {itemInventory[item.type]}개</div>
+                                </div>
+                                <div style={{display:'flex', flexDirection:'column', alignItems:'center', gap:'4px'}}>
+                                    <span style={{fontSize:'14px', color:'var(--px-warning)'}}>{itemPrices[item.type]}G</span>
+                                    <button
+                                        className="pixel-btn pixel-btn-primary"
+                                        style={{fontSize:'12px', padding:'2px 8px'}}
+                                        onClick={() => handleBuyItem(item.type)}
+                                        disabled={gold < itemPrices[item.type]}
+                                    >구매</button>
+                                </div>
+                            </div>
+                        ))}
+                        <div className="text-center" style={{marginTop:'10px'}}>
+                            <button className="pixel-btn pixel-btn-secondary" onClick={() => setShowItemShop(false)}>닫기</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {showCodeModal && (
+                <div className="modal-overlay" onClick={() => setShowCodeModal(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ width: '1100px', maxWidth: '96%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <h3 className="text-center pixel-text-primary" style={{ marginBottom: '6px', fontSize: '22px' }}>MY CODE HISTORY</h3>
+                        {codeHistory.length === 0 ? (
+                            <div className="pixel-card" style={{ padding: '20px', textAlign: 'center', color: '#999' }}>저장된 코드가 없습니다.</div>
+                        ) : (
+                            <div className="d-flex gap-3" style={{ minHeight: 0, flex: 1 }}>
+                                <div className="pixel-card" style={{ width: '260px', padding: '8px', overflowY: 'auto', minHeight: 0 }}>
+                                    {codeHistory.map((entry, idx) => (
+                                        <button
+                                            key={`${entry.submittedAt}-${idx}`}
+                                            className="profile-btn w-100 text-start"
+                                            style={{
+                                                marginBottom: '6px',
+                                                background: selectedHistoryIds.includes(entry.historyId)
+                                                    ? 'rgba(231, 110, 85, 0.35)'
+                                                    : selectedHistoryIndex === idx
+                                                        ? 'var(--px-primary)'
+                                                        : 'var(--px-surface-light)',
+                                                borderColor: selectedHistoryIds.includes(entry.historyId) ? 'var(--px-danger)' : undefined
+                                            }}
+                                            onClick={() => handleHistoryView(idx)}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                                <div style={{ fontSize: '14px' }}>#{idx + 1}{entry.roomId ? ` · ROOM ${entry.roomId}` : ''}</div>
+                                                <button
+                                                    type="button"
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        toggleHistorySelection(entry.historyId);
+                                                    }}
+                                                    style={{
+                                                        border: 'none',
+                                                        background: 'transparent',
+                                                        padding: 0,
+                                                        margin: 0,
+                                                        cursor: 'pointer',
+                                                        fontSize: '14px',
+                                                        color: selectedHistoryIds.includes(entry.historyId) ? 'var(--px-danger)' : '#ddd'
+                                                    }}
+                                                    aria-label={selectedHistoryIds.includes(entry.historyId) ? '선택 해제' : '선택'}
+                                                >
+                                                    {selectedHistoryIds.includes(entry.historyId) ? '☑' : '☐'}
+                                                </button>
+                                            </div>
+                                            <div style={{ fontSize: '12px', marginTop: '4px' }}>{new Date(entry.submittedAt).toLocaleString()}</div>
+                                            <div style={{ fontSize: '12px', marginTop: '2px', color: 'var(--px-warning)' }}>{(entry.problems?.length || entry.codes?.length || 1)}문제</div>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="pixel-card" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div className="pixel-card-header" style={{ justifyContent: 'center' }}>
+                                        <span style={{ color: 'var(--px-success)' }}>SUBMITTED CODE</span>
+                                    </div>
+                                    <div style={{ padding: '8px 10px', color: '#ccc', fontSize: '16px', lineHeight: 1.6 }}>
+                                        <div>언어: {selectedHistory?.lang || 'UNKNOWN'}</div>
+                                        <div>제출 시각: {selectedHistory ? new Date(selectedHistory.submittedAt).toLocaleString() : '-'}</div>
+                                        <div>문제: {selectedHistoryProblem?.title || '저장된 문제 없음'}</div>
+                                        <div style={{ marginTop: '8px' }}>코드:</div>
+                                    </div>
+                                    {selectedHistoryProblems.length > 1 && (
+                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', padding: '0 8px' }}>
+                                            {selectedHistoryProblems.map((problem, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    className="btn-code-view"
+                                                    onClick={() => setSelectedHistoryProblemIndex(idx)}
+                                                    style={{
+                                                        flex: '1 1 auto',
+                                                        fontSize: '14px',
+                                                        padding: '4px',
+                                                        background: selectedHistoryProblemIndex === idx ? 'var(--px-primary)' : '#1a1e21',
+                                                        color: selectedHistoryProblemIndex === idx ? '#000' : 'var(--px-primary)'
+                                                    }}
+                                                >
+                                                    문제 {idx + 1}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: '#1a1e21', border: '4px solid var(--px-border)', boxShadow: 'var(--px-inset-light)', padding: '10px' }}>
+                                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontFamily: 'var(--font-pixel)', fontSize: '16px', color: 'var(--px-text)' }}>
+                                            {selectedHistoryCode}
+                                        </pre>
+                                    </div>
+                                    <div className="pixel-card-header" style={{ justifyContent: 'center', borderTop: '4px solid var(--px-border)', padding: '4px 12px', fontSize: '16px' }}>
+                                        <span style={{ color: 'var(--px-success)' }}>✅ CORRECT ANSWER</span>
+                                    </div>
+                                    <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: '#1a1e21', border: '4px solid var(--px-success)', boxShadow: 'var(--px-inset-light)', padding: '10px' }}>
+                                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontFamily: 'var(--font-pixel)', fontSize: '16px', color: 'var(--px-text)' }}>
+                                            {getSolution(selectedHistoryProblem)}
+                                        </pre>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                            <div style={{ color: '#999', fontSize: '14px' }}>
+                                선택됨: {selectedHistoryIds.length}개
+                            </div>
+                            <div className="d-flex gap-2 flex-wrap justify-content-end">
+                                <button className="pixel-btn pixel-btn-secondary" style={{ minWidth: '120px' }} onClick={selectAllHistory}>
+                                    {codeHistory.length > 0 && selectedHistoryIds.length === codeHistory.length ? '선택 해제' : '전체 선택'}
+                                </button>
+                                <button className="pixel-btn pixel-btn-danger" style={{ minWidth: '120px' }} onClick={deleteSelectedHistory} disabled={selectedHistoryIds.length === 0}>
+                                    선택 삭제
+                                </button>
+                                <button className="pixel-btn pixel-btn-secondary" style={{ minWidth: '120px' }} onClick={() => setShowCodeModal(false)}>닫기</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+        );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<LobbyApp />);
+</script>
+</body>
+</html>

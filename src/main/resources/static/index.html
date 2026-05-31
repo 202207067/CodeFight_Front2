@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROCKY ONLINE COMPILER</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* ==============================================
+           Rocky Build Server - STRICT Pixel Art UI
+           ============================================== */
+        :root {
+            --px-bg: #212529;
+            --px-surface: #2C3E50;
+            --px-surface-light: #34495E;
+            --px-border: #000000;
+            --px-text: #F7F7F7;
+            --px-text-muted: #B2BEC3;
+            --px-primary: #209CEE;
+            --px-success: #92CC41;
+            --px-warning: #F7D51D;
+            --px-danger: #E76E55;
+            --px-shadow-hard: 4px 4px 0px #000;
+            --px-inset-light: inset -3px -3px 0px rgba(0,0,0,0.4);
+            --px-inset-pressed: inset 3px 3px 0px rgba(0,0,0,0.4);
+            --font-pixel: 'NeoDunggeunmo', 'Galmuri9', 'Press Start 2P', monospace;
+        }
+
+        * { box-sizing: border-box; image-rendering: pixelated; border-radius: 0 !important; }
+
+        ::selection { background: var(--px-primary); color: var(--px-text); }
+
+        html, body {
+            margin: 0; padding: 0;
+            background: var(--px-bg);
+            font-family: var(--font-pixel);
+            color: var(--px-text);
+            line-height: 1.4;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 18px;
+        }
+
+        body {
+            background-color: var(--px-bg);
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        body::after {
+            content: "";
+            position: fixed; inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.08) 0px,
+                rgba(0,0,0,0.08) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none; z-index: 9999;
+        }
+
+        .pixel-card {
+            background: var(--px-surface);
+            border: 4px solid var(--px-border);
+            box-shadow: var(--px-shadow-hard);
+            padding: 12px;
+        }
+
+        .pixel-card-header {
+            background: var(--px-surface-light);
+            border: 4px solid var(--px-border);
+            border-bottom: none;
+            padding: 8px 12px;
+            font-size: 18px;
+            color: var(--px-success);
+            text-shadow: 2px 2px 0 #000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pixel-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            font-family: var(--font-pixel); font-size: 18px; color: #fff;
+            border: 4px solid var(--px-border); outline: none; cursor: pointer;
+            padding: 10px 16px; text-decoration: none;
+            position: relative; user-select: none;
+            box-shadow: var(--px-shadow-hard);
+            transition: transform 0.06s, box-shadow 0.06s;
+        }
+        .pixel-btn:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
+        .pixel-btn:hover  { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+
+        .pixel-btn-primary { background: var(--px-primary); text-shadow: 2px 2px 0 rgba(0,0,0,0.4); }
+        .pixel-btn-primary:hover { background: #4DAEF4; }
+
+        .pixel-btn-success { background: var(--px-success); color: #000; text-shadow: none; }
+        .pixel-btn-success:hover { background: #B0E05D; }
+
+        .pixel-btn-danger { background: var(--px-danger); text-shadow: 2px 2px 0 rgba(0,0,0,0.3); }
+        .pixel-btn-danger:hover { background: #EE8C78; }
+
+        .pixel-btn-secondary {
+            background: #636e72; text-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+        }
+        .pixel-btn-secondary:hover { background: #7f8c8d; }
+
+        .pixel-input, .pixel-select {
+            font-family: var(--font-pixel); font-size: 17px;
+            background: #1a1e21; color: var(--px-text);
+            border: 4px solid var(--px-border); outline: none;
+            padding: 10px 12px; width: 100%;
+            box-shadow: var(--px-inset-light);
+        }
+        .pixel-input:focus, .pixel-select:focus {
+            border-color: var(--px-primary);
+        }
+        .pixel-input::placeholder { color: #636e72; }
+
+        .pixel-label {
+            display: block; font-size: 16px; color: var(--px-text-muted);
+            margin-bottom: 6px; letter-spacing: 1px;
+        }
+
+        .pixel-output {
+            background: #1a1e21;
+            border: 4px solid var(--px-border);
+            box-shadow: var(--px-inset-light);
+            padding: 10px;
+            font-family: var(--font-pixel); font-size: 16px;
+            color: var(--px-success);
+            white-space: pre-wrap; overflow-y: auto;
+            line-height: 1.5;
+            flex: 1;
+        }
+        .pixel-output.error { color: var(--px-danger); }
+
+        .pixel-title {
+            color: var(--px-primary);
+            font-size: 34px;
+            text-shadow: 3px 3px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            margin: 0 0 4px 0;
+        }
+        .pixel-subtitle {
+            color: var(--px-warning);
+            font-size: 16px;
+            text-shadow: 2px 2px 0 #000;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        .page-wrap {
+            height: 100vh;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            padding: 20px 24px 24px;
+        }
+        .editor-area { resize: none; flex: 1; }
+
+        .pixel-status {
+            font-size: 15px; color: var(--px-text-muted);
+        }
+        .pixel-status span {
+            color: var(--px-primary); text-shadow: 2px 2px 0 #000;
+        }
+        .pixel-status .status-success { color: var(--px-success); }
+        .pixel-status .status-error { color: var(--px-danger); }
+
+        .gutter-16 { gap: 16px; }
+
+        .pixel-input:focus,
+        .pixel-select:focus,
+        .pixel-btn:focus {
+            outline: 2px dashed var(--px-warning);
+            outline-offset: 2px;
+        }
+
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: var(--px-surface); border-left: 2px solid #000; }
+        ::-webkit-scrollbar-thumb { background: var(--px-primary); border: 2px solid #000; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--px-warning); }
+
+        @media (max-width: 991px) {
+            .pixel-title { font-size: 24px; }
+        }
+        @media (max-width: 768px) {
+            .pixel-title { font-size: 20px; }
+            .pixel-subtitle { font-size: 12px; }
+            .pixel-btn { padding: 8px 12px; font-size: 14px; }
+            .pixel-input, .pixel-select { font-size: 14px; padding: 8px 10px; }
+            .pixel-card, .pixel-card-header { border-width: 3px; }
+        }
+        @media (max-width: 576px) {
+            .page-wrap { padding: 16px 18px 18px; }
+            .pixel-title { font-size: 16px; }
+            .pixel-card-header { font-size: 14px; padding: 6px 8px; }
+            .pixel-output { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrap">
+    <div class="text-center mb-2">
+        <h1 class="pixel-title">Rocky Online Compiler</h1>
+        <p class="pixel-subtitle">INSERT COIN & CODE TO START</p>
+    </div>
+
+    <div class="row g-3 flex-grow-1" style="min-height:0;">
+        <!-- Editor Column -->
+        <div class="col-lg-7 d-flex flex-column" style="min-height:0;">
+            <div class="pixel-card-header">
+                <span>CODE EDITOR</span>
+                <select id="language" class="pixel-select" style="width:auto; padding:4px 8px; font-size:15px;">
+                    <option value="java">JAVA</option>
+                    <option value="python">PYTHON</option>
+                    <option value="cpp">C++</option>
+                </select>
+            </div>
+            <div class="pixel-card d-flex flex-column gap-2 flex-grow-1" style="min-height:0;">
+                <div>
+                    <label class="pixel-label" for="userId">PLAYER ID</label>
+                    <input type="text" id="userId" class="pixel-input" placeholder="ENTER ID (e.g. rocky_user)">
+                </div>
+                <div class="flex-grow-1 d-flex flex-column" style="min-height:0;">
+                    <label class="pixel-label" for="code">SOURCE CODE</label>
+                    <textarea id="code" class="pixel-input editor-area flex-grow-1" placeholder="// PASTE YOUR CODE...
+// LET'S ROCK!"></textarea>
+                </div>
+                <button id="runBtn" class="pixel-btn pixel-btn-primary w-100 mt-auto">RUN CODE</button>
+            </div>
+        </div>
+
+        <!-- Output Column -->
+        <div class="col-lg-5 d-flex flex-column" style="min-height:0;">
+            <div class="pixel-card-header" style="color: var(--px-warning);">
+                <span>OUTPUT CONSOLE</span>
+            </div>
+            <div class="pixel-card d-flex flex-column flex-grow-1" style="min-height:0;">
+                <div id="output" class="pixel-output flex-grow-1">AWAITING INPUT...</div>
+                <div class="mt-2 pixel-status text-end">
+                    STATUS: <span id="status" class="status-success">READY</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('runBtn').addEventListener('click', async () => {
+        const userId = document.getElementById('userId').value;
+        const language = document.getElementById('language').value;
+        const code = document.getElementById('code').value;
+        const outputDiv = document.getElementById('output');
+        const statusSpan = document.getElementById('status');
+
+        if (!userId.trim()) { alert("Please enter a Player ID."); return; }
+        if (!code.trim()) { alert("Please enter source code."); return; }
+
+        outputDiv.innerText = "> EXECUTING CODE...\n> PLEASE WAIT...";
+        outputDiv.classList.remove('error');
+        statusSpan.innerText = "RUNNING";
+        statusSpan.className = "";
+        statusSpan.style.color = "var(--px-warning)";
+
+        try {
+            const response = await fetch('/api/v1/build/run', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, language, code })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                outputDiv.innerText = result.output || "> NO OUTPUT";
+                statusSpan.innerText = "SUCCESS";
+                statusSpan.className = "status-success";
+                statusSpan.style.color = "";
+            } else {
+                outputDiv.classList.add('error');
+                outputDiv.innerText = result.error || "> CRITICAL ERROR";
+                statusSpan.innerText = "FAILED";
+                statusSpan.className = "status-error";
+                statusSpan.style.color = "";
+            }
+        } catch (error) {
+            outputDiv.classList.add('error');
+            outputDiv.innerText = "> NETWORK ERROR: " + error.message;
+            statusSpan.innerText = "ERROR";
+            statusSpan.className = "status-error";
+            statusSpan.style.color = "";
+        }
+    });
+</script>
+
+</body>
+</html>
