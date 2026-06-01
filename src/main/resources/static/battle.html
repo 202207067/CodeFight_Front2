@@ -135,18 +135,21 @@
         .item-btn:disabled:hover { background: none; color: #555; }
 
         .item-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:3500; display:flex; align-items:center; justify-content:center; }
-        .item-modal-box { background: var(--px-surface); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); padding:16px; max-width:420px; width:92%; }
-        .item-modal-title { font-size:22px; color:var(--px-warning); text-shadow:2px 2px 0 #000; margin-bottom:12px; text-align:center; }
+        .item-modal-box { background: var(--px-surface); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); padding:16px; max-width:420px; width:92%; max-height: 85vh; overflow-y: auto; }
+        .item-modal-title { font-size:22px; color:var(--px-warning); text-shadow:2px 2px 0 #000; margin-bottom:12px; text-align:center; position: sticky; top: -16px; background: var(--px-surface); padding: 10px 0; z-index: 10;}
         .item-option { background: #1a1e21; border:3px solid var(--px-border); padding:10px; margin-bottom:8px; cursor:pointer; display:flex; align-items:center; gap:10px; transition:0.1s; }
         .item-option:hover { border-color: var(--px-warning); background: #252f3f; }
         .item-option:disabled { opacity:0.4; cursor:not-allowed; border-color:#333; }
         .item-option:disabled:hover { border-color:#333; background:#1a1e21; }
         .item-icon { font-size:24px; width:36px; text-align:center; }
         .item-info { flex:1; }
-        .item-name { font-size:16px; color:#fff; }
-        .item-desc { font-size:12px; color:#aaa; }
+        .item-name { font-size:16px; color:#fff; display: flex; align-items: center; }
+        .item-desc { font-size:12px; color:#aaa; margin-top: 2px;}
         .item-count-badge { background: var(--px-surface-light); border:2px solid var(--px-border); padding:2px 6px; font-size:13px; color:var(--px-success); }
-        .item-modal-close { text-align:center; margin-top:10px; }
+        .item-modal-close { text-align:center; margin-top:10px; position: sticky; bottom: -16px; background: var(--px-surface); padding: 10px 0; z-index: 10;}
+        
+        .rare-badge { background: linear-gradient(135deg, #F7D51D, #F39C12); color: #000; font-size: 10px; padding: 2px 5px; margin-left: 8px; border: 2px solid #000; box-shadow: 2px 2px 0 #000; vertical-align: top; display: inline-block; animation: rarePulse 1.5s infinite; font-family: var(--font-pixel); text-shadow: none;}
+        @keyframes rarePulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.05); filter: brightness(1.2); } 100% { transform: scale(1); filter: brightness(1); } }
 
         .sub-item-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:10px; }
         .sub-item-btn { background: #1a1e21; border:3px solid var(--px-border); padding:10px 4px; cursor:pointer; text-align:center; transition:0.1s; }
@@ -281,6 +284,18 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script type="text/babel">
     const { useEffect, useState, useRef } = React;
+
+    // 🌟 공격템(opponent)과 버프템(me) 분리 설정
+    const BATTLE_ITEMS = [
+        { id: 'paint', icon: '🎨', name: '페인트 공격', desc: '화면 가리기', rare: false, target: 'opponent' },
+        { id: 'lightning', icon: '⚡', name: '번개 공격', desc: '상대방 찌릿!', rare: false, target: 'opponent' },
+        { id: 'reduceTime', icon: '⏰', name: '제한 시간 감소', desc: '상대방 시간 뺏기', rare: false, target: 'opponent' },
+        { id: 'doodle', icon: '🖍️', name: '낙서하기', desc: '코드에 낙서 테러', rare: true, target: 'opponent' },
+        
+        { id: 'showLength', icon: '🔢', name: '글자 수 보기', desc: '정답 글자수 확인', rare: false, target: 'me' },
+        { id: 'showFirst', icon: '🔠', name: '앞 글자 보기', desc: '정답 첫 글자 힌트', rare: false, target: 'me' },
+        { id: 'breakBlank', icon: '🔨', name: '빈칸 깨기', desc: '빈칸 하나 즉시 정답', rare: true, target: 'me' }
+    ];
 
     function formatTime(seconds) {
         const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
@@ -524,12 +539,21 @@
         const [blankAnswers, setBlankAnswers] = useState([]);
         const [checkResults, setCheckResults] = useState({});
 
+        // 🌟 추가: 제출 시간(남은 시간) 기록 & 콤보 상태 관리
+        const [mySubmitTimes, setMySubmitTimes] = useState({});
+        const [comboCount, setComboCount] = useState(0);
+        const comboedBlanks = useRef(new Set());
+
         const [itemInventory, setItemInventory] = useState(() => {
             try {
                 const stored = localStorage.getItem('rocky_items');
-                return stored ? { line: 2, symbol: 2, buildLimit: 2, paint: 2, ...JSON.parse(stored) } : { line: 2, symbol: 2, buildLimit: 2, paint: 2 };
-            } catch { return { line: 2, symbol: 2, buildLimit: 2, paint: 2 }; }
+                const defaultItems = { paint: 2, showLength: 2, showFirst: 2, lightning: 2, reduceTime: 2, breakBlank: 1, doodle: 1 };
+                return stored ? { ...defaultItems, ...JSON.parse(stored) } : defaultItems;
+            } catch { 
+                return { paint: 2, showLength: 2, showFirst: 2, lightning: 2, reduceTime: 2, breakBlank: 1, doodle: 1 }; 
+            }
         });
+        
         const itemInventoryInitialized = useRef(false);
         const [attackState, setAttackState] = useState({
             active: false,
@@ -542,6 +566,10 @@
         const [opponentEffects, setOpponentEffects] = useState({});
         const [buildLimits, setBuildLimits] = useState({});
         const [showItemModal, setShowItemModal] = useState(false);
+        
+        // 🌟 아이템 타겟팅 상태 추가 ('me' 또는 'opponent')
+        const [itemTargetType, setItemTargetType] = useState('opponent'); 
+        
         const [showSubItemModal, setShowSubItemModal] = useState(false);
         const [subItemType, setSubItemType] = useState(null);
         const [selectedSymbol, setSelectedSymbol] = useState('');
@@ -706,17 +734,68 @@
         });
 
         const roomUsers = [
-            { id: 'me', name: 'rocky_user (나)', avatar: '😎', problem: currentProblemNumber, solvedCount: localSolvedProblems.length, solvedProblems: localSolvedProblems },
+            { 
+                id: 'me', name: 'rocky_user (나)', avatar: '😎', problem: currentProblemNumber, 
+                solvedCount: localSolvedProblems.length, solvedProblems: localSolvedProblems,
+                tieBreaker: mySubmitTimes[currentIndex] || 0 // 내 제출 시간
+            },
             ...currentBotViews.map((bot) => ({
-                id: bot.id,
-                name: bot.name,
-                avatar: bot.avatar,
-                problem: currentProblemNumber,
-                solvedCount: bot.solvedProblems.length,
-                solvedProblems: bot.solvedProblems,
-                status: bot.status
+                id: bot.id, name: bot.name, avatar: bot.avatar, problem: currentProblemNumber,
+                solvedCount: bot.solvedProblems.length, solvedProblems: bot.solvedProblems, status: bot.status,
+                tieBreaker: bot.status === 'solved' ? bot.currentSchedule : 0 // 봇 제출 시간
             }))
         ];
+        // 🌟 1. 완벽한 등수 산정 (맞힌 개수 -> 동일하면 제출 시간 우선)
+        const getRank = (userId) => {
+            const user = roomUsers.find(u => u.id === userId);
+            if (!user) return 1;
+            
+            let rank = 1;
+            for (const other of roomUsers) {
+                if (other.id === user.id) continue;
+                
+                // 1차 기준: 맞힌 문제 수가 더 많으면 나보다 높은 등수
+                if (other.solvedCount > user.solvedCount) {
+                    rank++;
+                } 
+                // 2차 기준: 동점일 경우, 남은 시간이 클수록(빨리 제출했을수록) 높은 등수
+                else if (other.solvedCount === user.solvedCount) {
+                    if (other.tieBreaker > user.tieBreaker) {
+                        rank++;
+                    }
+                }
+            }
+            return rank;
+        };
+        // 🌟 2. 중간 채점 없이, 오타 없이 정답 입력 시 실시간 콤보 즉시 적용
+        useEffect(() => {
+            const currentAnswers = blankAnswers[currentIndex] || [];
+            const problem = problems[currentIndex] || {};
+            const partial = (typeof problem.partialCode === 'string' ? problem.partialCode : problem.partialCode?.[difficulty]) || '';
+            const blankCount = countBlanks(partial);
+            let correctAnswers = [];
+            const ansData = problem.answer?.[difficulty]?.[langKey] || problem.answer?.[langKey];
+            if (Array.isArray(ansData)) { correctAnswers = ansData; } 
+            else if (typeof ansData === 'string') { correctAnswers = [ansData]; }
+            
+            let newCombo = comboCount;
+            let comboUpdated = false;
+
+            for (let i = 0; i < blankCount; i++) {
+                const userAns = (currentAnswers[i] || '').trim().toLowerCase();
+                const correctAns = (correctAnswers[i] || '').trim().toLowerCase();
+                const blankKey = `${currentIndex}-${i}`; // 중복 카운트 방지 키
+                
+                if (userAns !== '' && userAns === correctAns) {
+                    if (!comboedBlanks.current.has(blankKey)) {
+                        comboedBlanks.current.add(blankKey);
+                        newCombo++;
+                        comboUpdated = true;
+                    }
+                }
+            }
+            if (comboUpdated) setComboCount(newCombo);
+        }, [blankAnswers, currentIndex, problems, difficulty, langKey]);
 
         const renderMiniStatus = (bot) => {
             const solvedCount = Math.min(Array.isArray(bot.solvedProblems) ? bot.solvedProblems.length : 0, totalProblems);
@@ -896,7 +975,6 @@
                     ctx.restore();
                 }
 
-                // ---- Static render (t=1.0, single pass) ----
                 ctx.save();
                 ctx.fillStyle = 'rgba(0,0,0,0.08)';
                 ctx.fillRect(0, 0, W, H);
@@ -1074,6 +1152,7 @@
             if (saveModalTimerRef.current) clearTimeout(saveModalTimerRef.current);
             setShowSaveModal(false);
             setLocalSolvedProblems((prev) => Array.from(new Set([...prev, currentIndex])).sort((a, b) => a - b));
+            setMySubmitTimes((prev) => ({ ...prev, [currentIndex]: remaining }))
             markProblemSubmitted(currentIndex);
             setChatExpanded(false);
             setDemoSpectating(true);
@@ -1150,10 +1229,17 @@
             setExpandedOpponentId(botId);
         };
 
-        const handleOpenItemModal = () => {
+        // 🌟 내 아이템용과 상대방 아이템용으로 핸들러 분리
+        const handleOpenOpponentItemModal = () => {
             if (!expandedOpponentId) return;
             const target = currentBotViews.find(b => b.id === expandedOpponentId);
             if (target && target.currentProblemSolved) return;
+            setItemTargetType('opponent');
+            setShowItemModal(true);
+        };
+
+        const handleOpenMyItemModal = () => {
+            setItemTargetType('me');
             setShowItemModal(true);
         };
 
@@ -1172,21 +1258,30 @@
         };
 
         const handleSelectItemType = (type) => {
-            if (itemInventory[type] <= 0) return;
+            if ((itemInventory[type] || 0) <= 0) return;
+
+            setItemInventory((prev) => ({ ...prev, [type]: prev[type] - 1 }));
+
+            // 🌟 나에게 쓰는 버프 아이템일 경우
+            if (itemTargetType === 'me') {
+                const itemName = BATTLE_ITEMS.find(i => i.id === type)?.name || type;
+                alert(`[시연] 나에게 '${itemName}' 아이템을 성공적으로 사용했습니다!`);
+                setShowItemModal(false);
+                return;
+            }
+
+            // 🌟 상대방에게 쓰는 공격 아이템일 경우
             if (type === 'paint') {
                 applyPaint(expandedOpponentId);
                 return;
             }
-            if (type === 'buildLimit') {
-                applyBuildLimit(expandedOpponentId);
-                return;
-            }
+
             setAttackState({
                 active: true,
-                phase: 'target-line',
+                phase: 'applied',
                 targetBotId: expandedOpponentId,
                 itemType: type,
-                revealTimer: 10,
+                revealTimer: 3,
                 selectedLine: null
             });
             setShowItemModal(false);
@@ -1209,7 +1304,6 @@
                     }
                 }
             }));
-            setItemInventory((prev) => ({ ...prev, paint: prev.paint - 1 }));
             setAttackState({
                 active: true,
                 phase: 'applied',
@@ -1799,11 +1893,10 @@
 
         const statusClass = status === 'running' ? 'terminal-running' : status === 'error' ? 'terminal-error' : status === 'success' ? 'terminal-success' : '';
 
-        // Chat state
         const [chatMessages, setChatMessages] = useState([
             { sender: 'SYSTEM', text: '배틀 시작! 서로 화이팅 하세요.', mode: '', time: '' }
         ]);
-                        const [chatMsg, setChatMsg] = useState('');
+        const [chatMsg, setChatMsg] = useState('');
         const [chatMode, setChatMode] = useState('ALL');
         const [chatExpanded, setChatExpanded] = useState(false);
         const chatRef = useRef(null);
@@ -1860,13 +1953,34 @@
             el.scrollTop = el.scrollHeight;
         }, [chatMessages]);
 
+        // 🌟 화면에 보여줄 아이템 리스트 계산
+        const displayedItems = BATTLE_ITEMS.filter(item => item.target === itemTargetType);
+
         return (
             <div className="page-container">
                 <div className="battle-layout">
                     <div className="battle-workspace">
                         <div className="battle-main-column">
                             <div className="pixel-card code-card" style={{position:'relative'}}>
-                                <div className="pixel-card-header"><div className="code-card-title-group"><span style={{color:'var(--px-primary)'}}>MY CODE</span><span className="code-card-lang-badge">{langLabel}</span></div><div className="code-card-header-gauge"><div className="progress-track"><div className="progress-fill" style={{width: `${progressPercent}%`}}></div></div><span>{problemProgressText}</span></div><button className="panel-toggle-btn" onClick={() => setProblemCollapsed(!problemCollapsed)} title={problemCollapsed ? '문제 펼치기' : '문제 접기'}>{problemCollapsed ? '▼' : '▲'}</button></div>
+                                <div className="pixel-card-header">
+                                    <div className="code-card-title-group">
+    {/* 🌟 아이콘 왼쪽: 등수 표시 추가 */}
+    <span style={{color:'var(--px-warning)', fontSize:'18px', marginRight:'8px'}}>{getRank('me')}등</span>
+    <span style={{color:'var(--px-primary)'}}>MY CODE</span>
+    <span className="code-card-lang-badge">{langLabel}</span>
+</div>
+<div style={{display:'flex', alignItems:'center'}}>
+    <div className="code-card-header-gauge">
+        {/* 🌟 같은 행 오른쪽: 콤보 점수 추가 */}
+        <span style={{color:'var(--px-success)', marginRight:'12px', fontSize:'16px'}}>0 COMBO</span>
+                                            <div className="progress-track"><div className="progress-fill" style={{width: `${progressPercent}%`}}></div></div>
+                                            <span>{problemProgressText}</span>
+                                        </div>
+                                        {/* 🌟 MY CODE 우측에 추가된 BUFF 아이템 버튼 */}
+                                        <button className="item-btn" onClick={handleOpenMyItemModal} style={{borderColor: 'var(--px-success)', color: 'var(--px-success)', marginRight: '8px', marginLeft: 0}} title="내 버프 아이템 사용">🎁 BUFF</button>
+                                        <button className="panel-toggle-btn" onClick={() => setProblemCollapsed(!problemCollapsed)} title={problemCollapsed ? '문제 펼치기' : '문제 접기'}>{problemCollapsed ? '▼' : '▲'}</button>
+                                    </div>
+                                </div>
                                 <div key="problem-summary" className="code-problem-summary" style={{height: problemCollapsed ? 55 : 210}}>
                                     <div className="code-problem-head">
                                         <div className="code-problem-copy">
@@ -1905,7 +2019,7 @@
                                 </div>
                                 <div className="panel-actions">
                                     <button className={`pixel-btn ${demoSpectating || spectatorLocked ? 'pixel-btn-secondary' : 'pixel-btn-primary'}`} onClick={handleBuild} style={{padding:'4px 10px', fontSize:'16px', opacity: demoSpectating || spectatorLocked ? '0.5' : '1'}}>{demoSpectating || spectatorLocked ? 'LOCKED' : 'RUN / BUILD'}</button>
-                                    <button className="pixel-btn pixel-btn-success" onClick={handleCheck} style={{padding:'4px 10px', fontSize:'16px'}}>채점</button>
+                                    
                                 </div>
                                 {submittedProblemIndices.includes(currentIndex) && (
                                     <div className={`chat-overlay ${chatExpanded ? 'visible' : ''}`}>
@@ -1943,7 +2057,17 @@
                                     <div className="opponent-timer-kicker">TIME LEFT</div>
                                     <div className="opponent-timer-detail">현재 라운드 제한 시간</div>
                                 </div>
-                                <div className="opponent-timer-clock" style={{fontSize: 22}}>{formatTime(remaining)}</div>
+                               {/* 🌟 60초 이하일 때 글씨가 붉게 변하고 깜빡이는 효과 추가 */}
+<div 
+    className="opponent-timer-clock" 
+    style={{
+        fontSize: 22, 
+        color: remaining <= 60 ? '#e74c3c' : 'var(--px-danger)',
+        animation: remaining <= 60 ? 'rarePulse 0.5s infinite' : 'none'
+    }}
+>
+    {formatTime(remaining)}
+</div>
                             </div>
                             <div className={`opponent-panels-container ${!expandedOpponentId && battleBots.length >= 5 ? 'two-cols' : ''} count-${battleBots.length} ${expandedOpponentId ? 'expanded-mode' : ''}`}>
                                 {expandedOpponentId ? (
@@ -1988,7 +2112,7 @@
                                                             if (hasBuildLimit) icons += '🚫';
                                                             return icons;
                                                         })()}
-                                                        <button className="item-btn" onClick={(e) => { e.stopPropagation(); handleOpenItemModal(); }} disabled={Object.values(itemInventory).every(v => v <= 0) || bot.currentProblemSolved} title="아이템 사용">⚡ ITEM</button>
+                                                        <button className="item-btn" onClick={(e) => { e.stopPropagation(); handleOpenOpponentItemModal(); }} disabled={Object.values(itemInventory).every(v => v <= 0) || bot.currentProblemSolved} title="아이템 공격">⚡ ITEM</button>
                                                     </span>
                                                 </div>
                                                 {renderMiniStatus(bot)}
@@ -2077,7 +2201,7 @@
                                         return (
                                             <div key={bot.id} className={`opponent-code-panel-mini ${demoSpectating || currentProblemLocked || hasPaint ? 'revealed' : 'hidden'}`} onClick={() => setExpandedOpponentId(bot.id)} style={{cursor:'pointer'}}>
                                                 <div className="mini-header">
-                                                    <span>{bot.avatar} {bot.name}</span>
+                                                    <span><span style={{color:'var(--px-warning)', marginRight:'6px'}}>{getRank(bot.id)}등</span>{bot.avatar} {bot.name}</span>
                                                     <span>{bot.status === 'solved' ? '✓' : '...'}{effIcon}</span>
                                                 </div>
                                                 {renderMiniStatus(bot)}
@@ -2118,7 +2242,7 @@
                                         return (
                                             <div key={bot.id} className={`opponent-code-panel-mini ${demoSpectating || currentProblemLocked || hasPaint ? 'revealed' : 'hidden'}`} onClick={() => setExpandedOpponentId(bot.id)} style={{cursor:'pointer'}}>
                                                 <div className="mini-header">
-                                                    <span>{bot.avatar} {bot.name}</span>
+                                                    <span><span style={{color:'var(--px-warning)', marginRight:'6px'}}>{getRank(bot.id)}등</span>{bot.avatar} {bot.name}</span>
                                                     <span>{bot.status === 'solved' ? '✓' : '...'}{effIcon}</span>
                                                 </div>
                                                 {renderMiniStatus(bot)}
@@ -2195,65 +2319,61 @@
                     <div className="game-over-overlay">
                         <div className="game-over-box">
                             <div className="game-over-text">GAME OVER</div>
+                            
+                            {/* 🌟 결과 멘트 출력 로직 추가 */}
+                            {(() => {
+                                const myRank = getRank('me');
+                                const totalPlayers = roomUsers.length;
+                                const topPercent = Math.round((myRank / totalPlayers) * 100);
+                                
+                                let resultMsg = "";
+                                if (myRank === 1) resultMsg = "압도적인 실력! 당신이 진정한 코딩 마스터입니다! 🏆";
+                                else if (topPercent <= 30) resultMsg = `상위 ${topPercent}%! 훌륭한 실력이네요! 👍`;
+                                else if (topPercent <= 70) resultMsg = `상위 ${topPercent}%. 아쉽네요, 조금만 더 분발하세요! 🏃`;
+                                else resultMsg = "당신... C언어 공부부터 다시 해야겠는데요? 💀";
+
+                                return (
+                                    <div style={{marginTop: '20px', marginBottom: '20px'}}>
+                                        <div style={{fontSize: '24px', color: '#fff', marginBottom: '8px'}}>{myRank}등 (상위 {topPercent}%)</div>
+                                        <div style={{fontSize: '18px', color: 'var(--px-warning)'}}>{resultMsg}</div>
+                                    </div>
+                                );
+                            })()}
+
                             <div className="game-over-sub">잠시 후 결과 페이지로 이동합니다...</div>
                         </div>
                     </div>
                 )}
 
+                {/* 🌟 분리된 아이템 모달창 */}
                 {showItemModal && (
                     <div className="item-modal-overlay" onClick={handleCloseItemModal}>
                         <div className="item-modal-box" onClick={e => e.stopPropagation()}>
-                            <div className="item-modal-title">⚡ 아이템 선택</div>
-                            <div
-                                className="item-option"
-                                onClick={() => handleSelectItemType('line')}
-                                style={itemInventory.line <= 0 ? {opacity:0.4, cursor:'not-allowed'} : {}}
-                            >
-                                <div className="item-icon">💣</div>
-                                <div className="item-info">
-                                    <div className="item-name">라인 아이템</div>
-                                    <div className="item-desc">수류탄 (해당 줄 삭제)</div>
-                                </div>
-                                <div className="item-count-badge">{itemInventory.line}회</div>
+                            <div className="item-modal-title">
+                                {itemTargetType === 'me' ? '🎁 내 버프 아이템' : '⚡ 공격 아이템 선택'}
                             </div>
-                            <div
-                                className="item-option"
-                                onClick={() => handleSelectItemType('paint')}
-                                style={itemInventory.paint <= 0 ? {opacity:0.4, cursor:'not-allowed'} : {}}
-                            >
-                                <div className="item-icon">🎨</div>
-                                <div className="item-info">
-                                    <div className="item-name">페인트 아이템</div>
-                                    <div className="item-desc">랜덤 페인트 스플래시</div>
+                            
+                            {displayedItems.map(item => (
+                                <div
+                                    key={item.id}
+                                    className="item-option"
+                                    onClick={() => handleSelectItemType(item.id)}
+                                    style={(itemInventory[item.id] || 0) <= 0 ? {opacity:0.4, cursor:'not-allowed'} : {}}
+                                >
+                                    <div className="item-icon">{item.icon}</div>
+                                    <div className="item-info">
+                                        <div className="item-name">
+                                            {item.name}
+                                            {item.rare && <span className="rare-badge">RARE</span>}
+                                        </div>
+                                        <div className="item-desc">{item.desc}</div>
+                                    </div>
+                                    <div className="item-count-badge">{(itemInventory[item.id] || 0)}회</div>
                                 </div>
-                                <div className="item-count-badge">{itemInventory.paint}회</div>
-                            </div>
-                            <div
-                                className="item-option"
-                                onClick={() => handleSelectItemType('symbol')}
-                                style={itemInventory.symbol <= 0 ? {opacity:0.4, cursor:'not-allowed'} : {}}
-                            >
-                                <div className="item-icon">🔣</div>
-                                <div className="item-info">
-                                    <div className="item-name">특수기호 아이템</div>
-                                    <div className="item-desc">특수기호 추가/삭제</div>
-                                </div>
-                                <div className="item-count-badge">{itemInventory.symbol}회</div>
-                            </div>
-                            <div
-                                className="item-option"
-                                onClick={() => handleSelectItemType('buildLimit')}
-                                style={itemInventory.buildLimit <= 0 ? {opacity:0.4, cursor:'not-allowed'} : {}}
-                            >
-                                <div className="item-icon">🚫</div>
-                                <div className="item-info">
-                                    <div className="item-name">빌드제한 아이템</div>
-                                    <div className="item-desc">상대 빌드 5회 제한</div>
-                                </div>
-                                <div className="item-count-badge">{itemInventory.buildLimit}회</div>
-                            </div>
+                            ))}
+
                             <div className="item-modal-close">
-                                <button className="pixel-btn pixel-btn-secondary" onClick={handleCloseItemModal}>닫기</button>
+                                <button className="pixel-btn pixel-btn-secondary" style={{width: '100%'}} onClick={handleCloseItemModal}>닫기</button>
                             </div>
                         </div>
                     </div>
