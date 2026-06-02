@@ -9,26 +9,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
-            --px-bg: #212529;
-            --px-surface: #2C3E50;
-            --px-surface-light: #34495E;
-            --px-border: #000000;
-            --px-text: #F7F7F7;
-            --px-text-muted: #B2BEC3;
-            --px-primary: #209CEE;
-            --px-success: #92CC41;
-            --px-warning: #F7D51D;
-            --px-danger: #E76E55;
-            --px-shadow-hard: 4px 4px 0px #000;
+            --px-bg: #212529; --px-surface: #2C3E50; --px-surface-light: #34495E;
+            --px-border: #000000; --px-text: #F7F7F7; --px-text-muted: #B2BEC3;
+            --px-primary: #209CEE; --px-success: #92CC41; --px-warning: #F7D51D;
+            --px-danger: #E76E55; --px-shadow-hard: 4px 4px 0px #000;
             --px-inset-light: inset -3px -3px 0px rgba(0,0,0,0.4);
-            --px-inset-pressed: inset 3px 3px 0px rgba(0,0,0,0.4);
             --font-pixel: 'NeoDunggeunmo', 'Galmuri9', 'Press Start 2P', monospace;
         }
         * { box-sizing: border-box; image-rendering: pixelated; border-radius: 0 !important; }
         html, body { margin:0; padding:0; background: var(--px-bg); font-family: var(--font-pixel); color: var(--px-text); line-height:1.4; height:100vh; overflow:hidden; font-size: 20px; }
         body { background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 16px 16px; }
         body::after { content:""; position:fixed; inset:0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 2px); pointer-events:none; z-index:9999; }
+        
         .page-container { display:flex; flex-direction:column; height:100vh; padding:20px 24px 24px; gap:12px; position:relative; z-index:10; }
+        
         .pixel-card { background: var(--px-surface); border:4px solid var(--px-border); box-shadow: var(--px-shadow-hard); display:flex; flex-direction:column; }
         .pixel-card-header { background: var(--px-surface-light); border:4px solid var(--px-border); border-bottom:none; padding:6px 12px; font-size:20px; display:flex; align-items:center; justify-content:space-between; }
         .pixel-btn { display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-pixel); font-size:18px; color:#fff; border:4px solid var(--px-border); outline:none; cursor:pointer; padding:8px 16px; position:relative; user-select:none; box-shadow: var(--px-shadow-hard); transition: transform 0.06s, box-shadow 0.06s; text-decoration:none; }
@@ -41,16 +35,27 @@
         .pixel-btn-danger { background: var(--px-danger); }
         .problem-title { color: var(--px-warning); font-size:22px; text-shadow:2px 2px 0 #000; margin-bottom:10px; }
         .problem-question { font-size:18px; line-height:1.7; color:#ddd; }
+        
+        /* 🌟 객관식 UI */
         .options-grid { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
         .option-btn { background: #1a1e21; border:3px solid var(--px-border); color: var(--px-text); font-family: var(--font-pixel); font-size:16px; padding:10px 14px; cursor:pointer; text-align:left; box-shadow: var(--px-inset-light); transition: background 0.1s, border-color 0.1s; }
         .option-btn:hover { background: #252f3f; }
         .option-btn.selected { border-color: var(--px-primary); background: rgba(32,156,238,0.15); }
         .option-btn.correct { border-color: var(--px-success); background: rgba(146,204,65,0.15); }
         .option-btn.wrong { border-color: var(--px-danger); background: rgba(231,110,85,0.15); }
+        
+        /* 🌟 빈칸 문제 UI */
+        .fill-blank-code { font-family: var(--font-pixel); font-size: 18px; line-height: 2.0; color: var(--px-text); background: #1a1e21; padding: 20px; border: 3px solid var(--px-border); box-shadow: var(--px-inset-light); white-space: pre-wrap; margin-top: 10px; }
+        .blank-input { background: #252f3f; border: 2px solid var(--px-border); color: var(--px-warning); font-family: var(--font-pixel); font-size: 18px; padding: 2px 6px; text-align: center; outline: none; box-shadow: var(--px-inset-light); min-width: 80px; display: inline-block; margin: 0 4px; }
+        .blank-input:focus { border-color: var(--px-primary); }
+        .blank-input:disabled { opacity: 0.8; }
+
         .result-correct { color: var(--px-success); text-shadow: 2px 2px 0 #000; }
         .result-wrong { color: var(--px-danger); text-shadow: 2px 2px 0 #000; }
         .explain-box { background: rgba(146, 204, 65, 0.1); border: 3px solid var(--px-success); padding: 10px; margin-top: 10px; }
         .answer-box { background: #1a1e21; border: 3px solid var(--px-border); padding: 10px; margin-top: 10px; box-shadow: var(--px-inset-light); }
+        
+        /* Sidebar UI */
         .user-list { padding:8px; display:flex; flex-direction:column; gap:6px; overflow-y:auto; flex-grow:1; }
         .user-item { background: #252f3f; border:3px solid var(--px-border); padding:6px; display:flex; align-items:center; gap:6px; box-shadow: var(--px-shadow-hard); cursor:pointer; }
         .user-item.me { border-color: var(--px-primary); }
@@ -64,77 +69,125 @@
         ::-webkit-scrollbar { width: 14px; }
         ::-webkit-scrollbar-track { background: var(--px-surface); border-left: 2px solid #000; }
         ::-webkit-scrollbar-thumb { background: var(--px-primary); border: 2px solid #000; }
-        @media (max-width: 768px) {
-            .page-container { padding:16px; }
-        }
+        
+        /* 🌟 설정 모달창 전용 CSS */
+        .setting-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+        .setting-label { color: var(--px-primary); font-size: 18px; text-shadow: 1px 1px 0 #000; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .setting-btn { background: #1a1e21; border:3px solid var(--px-border); color: var(--px-text); font-family: var(--font-pixel); font-size:16px; padding:10px 14px; cursor:pointer; text-align:center; box-shadow: var(--px-inset-light); transition: 0.1s; }
+        .setting-btn:hover { background: #252f3f; border-color: #fff; }
+        .setting-btn.selected { border-color: var(--px-success); background: rgba(146,204,65,0.2); color: var(--px-success); text-shadow: 1px 1px 0 #000; }
+
+        @media (max-width: 768px) { .page-container { padding:16px; } }
     </style>
 </head>
 <body>
 <div id="root"></div>
 <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-<script src="js/practice-exercises.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
-    const PRACTICE_STATE_KEY = 'practiceState_rocky_user';
+
+    // 🌟 문제 은행 (객관식 + 주관식 모두 포함)
+    const PROBLEM_POOL = [
+        { id: 'E1', difficulty: 'easy', type: 'fill_blank', title: '변수 선언 (빈칸)', question: '정수형 변수 선언을 완성하세요.', partialCode: '_____ num = 10;', answer: { JAVA: 'int', PYTHON: 'int', CPP: 'int', C: 'int' }, explanation: '정수형 변수를 선언하는 예약어입니다.' },
+        { id: 'E2', difficulty: 'easy', type: 'multiple_choice', title: '조건문 예약어 (객관식)', question: '조건이 참일 때 실행할 블록을 정의하는 예약어는?', options: ['for', 'if', 'switch', 'return'], correctIndex: 1, explanation: 'if문은 조건에 따라 코드를 실행합니다.' },
+        { id: 'M1', difficulty: 'medium', type: 'fill_blank', title: '화면 출력 (빈칸)', question: 'Hello World를 출력하는 함수를 완성하세요.', partialCode: '_____("Hello World");', answer: { C: 'printf', CPP: 'printf', JAVA: 'System.out.print', PYTHON: 'print' }, explanation: '언어별 표준 출력 함수입니다.' },
+        { id: 'M2', difficulty: 'medium', type: 'multiple_choice', title: '사용자 입력 (객관식)', question: 'C언어에서 사용자로부터 데이터를 입력받을 때 사용하는 함수는?', options: ['printf', 'scanf', 'malloc', 'free'], correctIndex: 1, explanation: 'scanf는 C언어의 표준 입력 함수입니다.' },
+        { id: 'H1', difficulty: 'hard', type: 'multiple_choice', title: '포인터 연산 (객관식)', question: 'int a = 10; int *p = &a; 일 때, *p 의 출력 결과는?', options: ['10', 'a의 주소값', 'p의 주소값', '컴파일 에러'], correctIndex: 0, explanation: '* 연산자는 포인터가 가리키는 실제 값을 참조합니다.' },
+        { id: 'H2', difficulty: 'hard', type: 'fill_blank', title: '이중 포인터 (빈칸)', question: '이중 포인터가 가리키는 실제 값을 출력하세요.', partialCode: 'int a=5; int *p=&a; int **pp=&p; printf("%d", _____pp);', answer: { C: '**', CPP: '**', JAVA: '**', PYTHON: '**' }, explanation: '이중 포인터를 두 번 참조(dereference)해야 실제 값에 도달합니다.' }
+    ];
+
+    function countBlanks(partialCode) {
+        if (!partialCode) return 0;
+        const matches = partialCode.match(/[a-zA-Z0-9_]*_____/g);
+        return matches ? matches.length : 0;
+    }
 
     function shuffleArray(items) {
         return [...items].sort(() => Math.random() - 0.5);
     }
 
-    function createExercisePool(count) {
-        const bank = (typeof practiceExercises !== 'undefined' ? practiceExercises : []);
-        const shuffled = shuffleArray(bank);
-        return shuffled.slice(0, Math.max(3, Math.min(30, count)));
-    }
-
     function PracticeApp() {
-        const params = new URLSearchParams(window.location.search);
-        const lang = (params.get('lang') || 'JAVA').toUpperCase();
-        const requestedCount = Math.max(3, Math.min(30, parseInt(params.get('count')) || 10));
+        // 🌟 화면 전환용 State ('setup' = 설정창, 'practice' = 문제창)
+        const [view, setView] = useState('setup');
 
+        // 🌟 모달창(설정창) 용 State
+        const [settingLang, setSettingLang] = useState('JAVA');
+        const [settingDiff, setSettingDiff] = useState('보통');
+        const [settingType, setSettingType] = useState('ALL');
+        const [settingCount, setSettingCount] = useState(5);
+
+        // 🌟 실제 게임 플레이용 State
+        const [activeLang, setActiveLang] = useState('JAVA');
+        const [activeDifficulty, setActiveDifficulty] = useState('medium');
         const [exercises, setExercises] = useState([]);
         const [currentIndex, setCurrentIndex] = useState(0);
         const [userAnswers, setUserAnswers] = useState([]);
         const [checked, setChecked] = useState(new Set());
 
-        useEffect(() => {
-            const pool = createExercisePool(requestedCount);
+        // 🌟 [START PRACTICE] 버튼을 눌렀을 때
+        const handleStart = () => {
+            const diffMap = { '쉬움': 'easy', '보통': 'medium', '어려움': 'hard' };
+            const difficulty = diffMap[settingDiff];
+            setActiveDifficulty(difficulty);
+            setActiveLang(settingLang);
+
+            // 1. 난이도, 유형에 맞춰서 필터링
+            let filtered = PROBLEM_POOL.filter(p => p.difficulty === difficulty);
+            if (settingType === 'MCQ') filtered = filtered.filter(p => p.type === 'multiple_choice');
+            if (settingType === 'BLANK') filtered = filtered.filter(p => p.type === 'fill_blank');
+
+            // 2. 섞고 갯수만큼 뽑기 (모자라면 채워넣기)
+            let pool = shuffleArray(filtered);
+            while(pool.length > 0 && pool.length < settingCount) {
+                pool = [...pool, ...shuffleArray(filtered)];
+            }
+            pool = pool.slice(0, settingCount);
+
+            if (pool.length === 0) {
+                alert('해당 조건에 맞는 문제가 없습니다. 다른 옵션을 선택해주세요.');
+                return;
+            }
+
+            // 3. 문제 세팅하고 연습 화면으로 넘어가기!
             setExercises(pool);
+            setUserAnswers(pool.map(p => p.type === 'fill_blank' ? [] : -1));
+            setChecked(new Set());
+            setCurrentIndex(0);
+            setView('practice'); // 화면 전환!
+        };
 
-            // restore state
-            try {
-                const saved = localStorage.getItem(PRACTICE_STATE_KEY);
-                if (saved) {
-                    const st = JSON.parse(saved);
-                    if (st.lang === lang && String(st.count) === String(requestedCount) && Array.isArray(st.answers)) {
-                        setUserAnswers(st.answers);
-                        setChecked(new Set(st.checked || []));
-                        setCurrentIndex(Math.min(Math.max(st.currentIndex || 0, 0), pool.length - 1));
-                        return;
-                    }
+        // 🌟 연습 모드 내의 채점 로직 (객관식 / 빈칸 공통)
+        const checkIsCorrect = (ex, ans) => {
+            if (!ex) return false;
+            if (ex.type === 'multiple_choice') {
+                return ans === ex.correctIndex;
+            } else {
+                if (!Array.isArray(ans)) return false;
+                const partial = (typeof ex.partialCode === 'string' ? ex.partialCode : ex.partialCode?.[activeDifficulty]) || '';
+                const blankCount = countBlanks(partial);
+                let correctAnswers = ex.answer?.[activeDifficulty]?.[activeLang] || ex.answer?.[activeLang] || [];
+                if(typeof correctAnswers === 'string') correctAnswers = [correctAnswers];
+
+                let allMatch = true;
+                for(let i=0; i<blankCount; i++) {
+                    const uA = (ans[i] || '').trim().toLowerCase();
+                    const cA = (correctAnswers[i] || '').trim().toLowerCase();
+                    if(uA !== cA) allMatch = false;
                 }
-            } catch (e) {}
-            setUserAnswers(Array(pool.length).fill(-1));
-        }, [lang, requestedCount]);
-
-        useEffect(() => {
-            if (exercises.length === 0) return;
-            localStorage.setItem(PRACTICE_STATE_KEY, JSON.stringify({
-                lang, count: requestedCount,
-                currentIndex, answers: userAnswers,
-                checked: Array.from(checked)
-            }));
-        }, [exercises, currentIndex, userAnswers, checked, lang, requestedCount]);
+                return allMatch && ans.length >= blankCount && blankCount > 0;
+            }
+        };
 
         const currentEx = exercises[currentIndex] || {};
         const isChecked = checked.has(currentIndex);
         const selectedOption = userAnswers[currentIndex];
-        const isCorrect = isChecked && selectedOption === currentEx.correctIndex;
+        const isCorrect = isChecked && checkIsCorrect(currentEx, selectedOption);
 
-        const handleSelect = (idx) => {
+        const handleSelectMcq = (idx) => {
             if (isChecked) return;
             setUserAnswers(prev => {
                 const next = [...prev];
@@ -143,36 +196,105 @@
             });
         };
 
+        const handleInputBlank = (blankIdx, value) => {
+            if (isChecked) return;
+            setUserAnswers(prev => {
+                const next = [...prev];
+                const currentArr = Array.isArray(next[currentIndex]) ? [...next[currentIndex]] : [];
+                currentArr[blankIdx] = value;
+                next[currentIndex] = currentArr;
+                return next;
+            });
+        };
+
         const handleCheck = () => {
-            if (selectedOption === -1 || selectedOption === undefined) return;
+            if (currentEx.type === 'multiple_choice' && (selectedOption === -1 || selectedOption === undefined)) return;
             setChecked(prev => new Set(prev).add(currentIndex));
         };
 
         const handlePrev = () => setCurrentIndex(i => Math.max(0, i - 1));
         const handleNext = () => setCurrentIndex(i => Math.min(exercises.length - 1, i + 1));
         const handleExit = () => {
-            if (window.confirm('연습을 종료하고 로비로 돌아가시겠습니까?')) {
-                localStorage.removeItem(PRACTICE_STATE_KEY);
-                window.location.href = 'lobby.html';
+            if (window.confirm('연습을 종료하고 설정 화면으로 돌아가시겠습니까?')) {
+                setView('setup'); // 로비가 아니라 다시 모달창(설정창)으로!
             }
         };
 
         const solvedCount = useMemo(() => {
             let count = 0;
             for (let i = 0; i < exercises.length; i++) {
-                if (checked.has(i) && userAnswers[i] === exercises[i].correctIndex) count++;
+                if (checked.has(i) && checkIsCorrect(exercises[i], userAnswers[i])) count++;
             }
             return count;
         }, [checked, userAnswers, exercises]);
 
         const progressPct = exercises.length > 0 ? (solvedCount / exercises.length) * 100 : 0;
 
+        // ════════════════════════════════════════════════════════
+        // 🌟 뷰 1: 시작 전 설정창 (모달 느낌)
+        // ════════════════════════════════════════════════════════
+        if (view === 'setup') {
+            return (
+                <div className="page-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
+                    <div className="pixel-card" style={{ width: '100%', maxWidth: '550px', padding: '30px', gap: '8px' }}>
+                        <div style={{ textAlign: 'center', color: 'var(--px-warning)', fontSize: '32px', textShadow: '2px 2px 0 #000', marginBottom: '16px' }}>
+                            PRACTICE SETTINGS
+                        </div>
+                        
+                        <div className="setting-section">
+                            <div className="setting-label">언어 선택</div>
+                            <div className="grid-3">
+                                {['JAVA', 'PYTHON', 'CPP'].map(l => (
+                                    <button key={l} className={`setting-btn ${settingLang === l ? 'selected' : ''}`} onClick={() => setSettingLang(l)}>{l}</button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="setting-section">
+                            <div className="setting-label">난이도</div>
+                            <div className="grid-3">
+                                {['쉬움', '보통', '어려움'].map(d => (
+                                    <button key={d} className={`setting-btn ${settingDiff === d ? 'selected' : ''}`} onClick={() => setSettingDiff(d)}>{d}</button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="setting-section">
+                            <div className="setting-label">출제 유형</div>
+                            <div className="grid-3">
+                                <button className={`setting-btn ${settingType === 'ALL' ? 'selected' : ''}`} onClick={() => setSettingType('ALL')}>전체 혼합</button>
+                                <button className={`setting-btn ${settingType === 'MCQ' ? 'selected' : ''}`} onClick={() => setSettingType('MCQ')}>객관식만</button>
+                                <button className={`setting-btn ${settingType === 'BLANK' ? 'selected' : ''}`} onClick={() => setSettingType('BLANK')}>빈칸 채우기</button>
+                            </div>
+                        </div>
+
+                        <div className="setting-section" style={{ marginBottom: '24px' }}>
+                            <div className="setting-label">문제 수</div>
+                            <div className="grid-3">
+                                {[3, 5, 10].map(c => (
+                                    <button key={c} className={`setting-btn ${settingCount === c ? 'selected' : ''}`} onClick={() => setSettingCount(c)}>{c} 문제</button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <button className="pixel-btn pixel-btn-success" style={{ fontSize: '24px', padding: '14px' }} onClick={handleStart}>START PRACTICE</button>
+                            <button className="pixel-btn pixel-btn-secondary" style={{ padding: '10px' }} onClick={() => window.location.href='lobby.html'}>◀ 로비로 돌아가기</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ════════════════════════════════════════════════════════
+        // 🌟 뷰 2: 실제 연습 문제 화면 (현서님 원본 UI + 빈칸/객관식 호환)
+        // ════════════════════════════════════════════════════════
         return (
             <div className="page-container">
                 <div className="pixel-card" style={{ flexShrink: 0, padding: '8px 12px', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', boxShadow: 'none', borderWidth: '3px' }}>
                     <span style={{ color: 'var(--px-warning)', fontSize: '18px' }}>PRACTICE MODE</span>
                     <div style={{ display: 'flex', gap: '8px', fontSize: '14px' }}>
-                        <span style={{ background: '#1a1e21', border: '2px solid #000', padding: '2px 8px' }}>LANG {lang}</span>
+                        <span style={{ background: '#1a1e21', border: '2px solid #000', padding: '2px 8px' }}>LANG {activeLang}</span>
                         <span style={{ background: '#1a1e21', border: '2px solid #000', padding: '2px 8px', color: 'var(--px-success)' }}>{solvedCount}/{exercises.length} SOLVED</span>
                     </div>
                 </div>
@@ -187,32 +309,50 @@
                         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                             <div className="problem-question">{currentEx.question}</div>
 
-                            <div className="options-grid">
-                                {(currentEx.options || []).map((opt, idx) => {
-                                    const optLabel = String.fromCharCode(65 + idx);
-                                    let btnClass = 'option-btn';
-                                    if (isChecked) {
-                                        if (idx === currentEx.correctIndex) btnClass += ' correct';
-                                        else if (idx === selectedOption) btnClass += ' wrong';
-                                    } else if (idx === selectedOption) {
-                                        btnClass += ' selected';
-                                    }
-                                    return (
-                                        <button
-                                            key={idx}
-                                            className={btnClass}
-                                            onClick={() => handleSelect(idx)}
-                                            disabled={isChecked}
-                                        >
-                                            <span style={{ color: 'var(--px-warning)', marginRight: '8px' }}>{optLabel}.</span>
-                                            {opt}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            {/* 문제 타입별 UI 분기 */}
+                            {currentEx.type === 'multiple_choice' ? (
+                                <div className="options-grid">
+                                    {(currentEx.options || []).map((opt, idx) => {
+                                        const optLabel = String.fromCharCode(65 + idx);
+                                        let btnClass = 'option-btn';
+                                        if (isChecked) {
+                                            if (idx === currentEx.correctIndex) btnClass += ' correct';
+                                            else if (idx === selectedOption) btnClass += ' wrong';
+                                        } else if (idx === selectedOption) {
+                                            btnClass += ' selected';
+                                        }
+                                        return (
+                                            <button key={idx} className={btnClass} onClick={() => handleSelectMcq(idx)} disabled={isChecked}>
+                                                <span style={{ color: 'var(--px-warning)', marginRight: '8px' }}>{optLabel}.</span>
+                                                {opt}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="fill-blank-code">
+                                    {(() => {
+                                        const pCode = (typeof currentEx.partialCode === 'string' ? currentEx.partialCode : currentEx.partialCode?.[activeDifficulty]) || '';
+                                        const parts = pCode.split('_____');
+                                        return parts.map((part, i) => (
+                                            <span key={i}>
+                                                {part}
+                                                {i < parts.length - 1 && (
+                                                    <input 
+                                                        className="blank-input" 
+                                                        value={(userAnswers[currentIndex] || [])[i] || ''}
+                                                        onChange={(e) => handleInputBlank(i, e.target.value)}
+                                                        disabled={isChecked}
+                                                    />
+                                                )}
+                                            </span>
+                                        ));
+                                    })()}
+                                </div>
+                            )}
 
-                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                <button className="pixel-btn pixel-btn-primary" onClick={handleCheck} disabled={selectedOption === -1 || selectedOption === undefined}>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+                                <button className="pixel-btn pixel-btn-primary" onClick={handleCheck} disabled={isChecked || (currentEx.type === 'multiple_choice' && (selectedOption === -1 || selectedOption === undefined))}>
                                     정답 확인
                                 </button>
                             </div>
@@ -225,7 +365,15 @@
                                     {!isCorrect && (
                                         <div className="answer-box">
                                             <div style={{ fontSize: '14px', color: '#aaa', marginBottom: '4px' }}>정답:</div>
-                                            <div style={{ color: 'var(--px-success)', fontSize: '18px' }}>{String.fromCharCode(65 + currentEx.correctIndex)}. {currentEx.options[currentEx.correctIndex]}</div>
+                                            <div style={{ color: 'var(--px-success)', fontSize: '18px' }}>
+                                                {currentEx.type === 'multiple_choice' 
+                                                    ? `${String.fromCharCode(65 + currentEx.correctIndex)}. ${currentEx.options[currentEx.correctIndex]}`
+                                                    : (() => {
+                                                        const a = currentEx.answer?.[activeDifficulty]?.[activeLang] || currentEx.answer?.[activeLang];
+                                                        return Array.isArray(a) ? a.join(' , ') : a;
+                                                    })()
+                                                }
+                                            </div>
                                         </div>
                                     )}
                                     <div className="explain-box">
@@ -251,27 +399,21 @@
                         <div className="user-list">
                             {exercises.map((ex, idx) => {
                                 const cls = checked.has(idx)
-                                    ? (userAnswers[idx] === ex.correctIndex ? 'solved' : 'wrong')
+                                    ? (checkIsCorrect(ex, userAnswers[idx]) ? 'solved' : 'wrong')
                                     : idx === currentIndex ? 'me' : '';
                                 return (
                                     <div className={`user-item ${cls}`} key={ex.id || idx} onClick={() => setCurrentIndex(idx)}>
                                         <div className="user-avatar" style={{ fontSize: '1.2rem' }}>
                                             {checked.has(idx)
-                                                ? (userAnswers[idx] === ex.correctIndex ? 'O' : 'X')
+                                                ? (checkIsCorrect(ex, userAnswers[idx]) ? 'O' : 'X')
                                                 : idx === currentIndex ? '▶' : '□'}
                                         </div>
                                         <div className="user-info">
                                             <div>문제 {idx + 1}</div>
-                                            <div style={{ fontSize: '13px', color: '#aaa' }}>{ex.title || ''}</div>
+                                            <div style={{ fontSize: '13px', color: '#aaa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.title || ''}</div>
                                         </div>
-                                        <div className="user-score" style={{
-                                            color: checked.has(idx)
-                                                ? (userAnswers[idx] === ex.correctIndex ? 'var(--px-success)' : 'var(--px-danger)')
-                                                : '#777'
-                                        }}>
-                                            {checked.has(idx)
-                                                ? (userAnswers[idx] === ex.correctIndex ? '정답' : '오답')
-                                                : '미풀이'}
+                                        <div className="user-score" style={{ color: checked.has(idx) ? (checkIsCorrect(ex, userAnswers[idx]) ? 'var(--px-success)' : 'var(--px-danger)') : '#777', whiteSpace: 'nowrap' }}>
+                                            {checked.has(idx) ? (checkIsCorrect(ex, userAnswers[idx]) ? '정답' : '오답') : '미풀이'}
                                         </div>
                                     </div>
                                 );

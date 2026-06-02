@@ -606,7 +606,7 @@
                                 <div className="panel-section" style={{alignItems:'center'}}>
                                     {players[0] && players[0].isHost ? (
                                         <a
-                                            href={`battle.html?fresh=1&roomId=${encodeURIComponent(roomId || '')}&lang=${encodeURIComponent(myLanguage || 'java')}&mode=${encodeURIComponent(roomMode || '1/1')}&count=${encodeURIComponent(settings.count || '5')}&maxPlayers=${encodeURIComponent(settings.maxPlayers || parsedMaxPlayers)}`}
+                                            href={`battle.html?fresh=1&roomId=${encodeURIComponent(roomId || '')}&diff=${encodeURIComponent(settings.diff)}&lang=${encodeURIComponent(myLanguage || 'java')}&mode=${encodeURIComponent(roomMode || '1/1')}&count=${encodeURIComponent(settings.count || '5')}&maxPlayers=${encodeURIComponent(settings.maxPlayers || parsedMaxPlayers)}`}
                                             className="btn-ready"
                                             onClick={handleStartGame}
                                             style={{width:'100%', background:'var(--px-success)', color:'#000', textShadow:'none', textDecoration:'none', display:'inline-flex', alignItems:'center', justifyContent:'center'}}
